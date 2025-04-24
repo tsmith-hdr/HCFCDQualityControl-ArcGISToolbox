@@ -1,0 +1,42 @@
+## Ignore the Secrets File
+secrets.json
+
+
+## Ignore all .pyc 
+*.pyc
+
+## Ignore all Pycache
+/__pycache__/
+
+
+## Ignore all XML Files associated with the Python Toolbox
+*.xml
+*.pyt.xml
+
+
+## Ignore the scratch/working Notebook
+scratch.ipynb
+
+## Ignores the testing Geodatabses. Too big to add to github
+testing/geodatabases/
+
+## Ignore Testing Outputs
+testing/outputs/
+
+## Ignore Tool Outputs
+outputs/
+
+## Ignore Logs
+logs/CompareMetadata/
+logs/CompareSpatialReferences/
+logs/CompareStorageLocations/
+logs/FGDBCompressionsAndDecompressions/
+logs/GetFeatureClassDates/
+logs/UpdateMetadata/
+
+
+
+## Ignore all Standalone Scripts Except for the Zipped File
+standalone/SCRIPT_*
+
+!.StandaloneScripts.zip
