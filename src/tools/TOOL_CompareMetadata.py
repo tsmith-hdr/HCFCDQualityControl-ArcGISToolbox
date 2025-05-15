@@ -20,10 +20,12 @@ import openpyxl
 from openpyxl.styles import Alignment
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-if str(Path(__file__).resolve().parents[1]) not in sys.path:
-    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from hcfcd_classes.DataCatalog import DataCatalogRow
-from hcfcd_constants.values import ROOT_DIR
+if str(Path(__file__).resolve().parents[2]) not in sys.path:
+    sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
+
+from src.classes.DataCatalog import DataCatalogRow
+from src.constants.paths import ROOT_DIR
+from src.constants.values import DF_COLUMNS, SERVICE_ITEM_LOOKUP
 
 
 #################################################################################################################################################################################################################
@@ -46,42 +48,8 @@ master_gdb_name = "Master"
 DF_DICTIONARY = {}
 DF_LIST = []
 
-DF_COLUMNS = ["Master - Exist", 
-              "Spatial - Exist", 
-              "Service - Exist", 
-              "Master - title",
-              "Spatial - title",
-              "Service - title",
-              "title - Match", 
-              "Master - description",
-              "Spatial - description",
-              "Service - description",
-              "description - Match", 
-              "Master - summary",
-              "Spatial - summary",
-              "Service - summary",
-              "summary - Match", 
-              "Master - tags",
-              "Spatial - tags",
-              "Service - tags",
-              "tags - Match",
-              "Master - credits",
-              "Spatial - credits",
-              "Service - credits",
-              "credits - Match", 
-              "Master - accessConstraints",
-              "Spatial - accessConstraints",
-              "Service - accessConstraints",
-              "accessConstraints - Match"
-              ]
-
 EXCEL_COLS = {}
-SERVICE_ITEM_LOOKUP = {"title":"title", 
-                       "description":"description", 
-                       "summary":"snippet", 
-                       "tags":"tags", 
-                       "credits":"accessInformation", 
-                       "accessConstraints":"licenseInfo"}
+
 ##################################################################################################################################################################
 ## Functions
 
@@ -100,32 +68,23 @@ def getMetadata(row_obj:DataCatalogRow, md_items:list, text_type:str)->dict:
 
     out_dictionary = {}
 
-    spatial_md_obj =md.Metadata(row_obj.getFilePath("Spatial"))
-    master_md_obj = md.Metadata(row_obj.getFilePath("Master"))
+    local_md_obj =md.Metadata(row_obj.fc_path)
     service_obj = row_obj.getServiceObject()
     
-    master_exist = row_obj.master_exist
-    spatial_exist = row_obj.spatial_exist
+    local_exist = row_obj.local_exist
     service_exist = row_obj.service_exist
 
-    out_dictionary[f"Master - Exist"] = master_exist
-    out_dictionary[f"Spatial - Exist"] = spatial_exist
+    out_dictionary[f"Local - Exist"] = local_exist
     out_dictionary[f"Service - Exist"] = service_exist
 
     for md_item in md_items:
 
-        if not master_exist:
-            master_md_attr = "Dataset Doesn't Exist"
+        if not local_exist:
+            local_md_attr = "Dataset Doesn't Exist"
         else:
-            if hasattr(master_md_obj, md_item):
-                master_md_attr = _formatMdItems(getattr(master_md_obj, md_item),md_item, text_type) if getattr(master_md_obj, md_item) else "Missing"
+            if hasattr(local_md_obj, md_item):
+                local_md_attr = _formatMdItems(getattr(local_md_obj, md_item),md_item, text_type) if getattr(local_md_obj, md_item) else "Missing"
 
-        if not spatial_exist:
-            spatial_md_attr = "Dataset Doesn't Exist"
-        else:
-            if hasattr(spatial_md_obj, md_item):
-                spatial_md_attr = _formatMdItems(getattr(spatial_md_obj, md_item),md_item, text_type) if getattr(spatial_md_obj, md_item) else "Missing"
-  
         if not service_exist:
             service_md_attr = "Dataset Doesn't Exist"
         else:
@@ -134,17 +93,15 @@ def getMetadata(row_obj:DataCatalogRow, md_items:list, text_type:str)->dict:
 
 
 
-        out_dictionary[f"Master - {md_item}"] = master_md_attr
-        out_dictionary[f"Spatial - {md_item}"] = spatial_md_attr
+        out_dictionary[f"Local - {md_item}"] = local_md_attr
         out_dictionary[f"Service - {md_item}"] = service_md_attr
 
         
-        master_md_item_check = _cleanCheckText(master_md_attr) if master_md_attr else None
-        spatial_md_item_check = _cleanCheckText(spatial_md_attr) if spatial_md_attr else None
+        local_md_item_check = _cleanCheckText(local_md_attr) if local_md_attr else None
         service_md_item_check = _cleanCheckText(service_md_attr) if service_md_attr else None
 
 
-        check_list = [i for i in [master_md_item_check, spatial_md_item_check,service_md_item_check] if i is not None and i != "dataset doesn't exist"]
+        check_list = [i for i in [local_md_item_check, service_md_item_check] if i is not None and i != "dataset doesn't exist"]
         check_set = set(check_list)
         result = len(check_set)
 
@@ -220,21 +177,21 @@ def _formatMdItems(text:str, md_item:str, text_type:str)->str:
 
 
             
-def getCatalogRows(catalog_df:DataFrame, gdb_names:list):
-    if gdb_names:
-        return [r for r in catalog_df.iterrows() if r[1]["Spatial GDB"] in gdb_names]
+def getCatalogRows(catalog_df:DataFrame, web_app_categories:list):
+    if web_app_categories:
+        return [r for r in catalog_df.iterrows() if r[1]["Initial Screening Criteria"] in web_app_categories]
     else:
         return catalog_df.iterrows()
     
 
 ##################################################################################################################################################################
 ## Main
-def main(gis_conn:GIS, gdb_directory:Path, catalog_path:Path, output_excel:Path, text_type:str, spatial_gdb_names:list=None)->None:
+def main(gis_conn:GIS, gdb_path:Path, catalog_path:Path, output_excel:Path, text_type:str, web_app_categories:list=None)->None:
 
     logger.info(f"Starting: {datetime.datetime.now()}")
     logger.info(f"Run by: {os.getlogin()}")
     logger.info(f"Run on: {datetime.datetime.now().strftime('%d/%m/%Y, %H:%M:%S')}")
-    logger.info(f"Spatial_GDBs: {spatial_gdb_names}")
+    logger.info(f"Web App Categories: {web_app_categories}")
     logger.info(f"Output Excel Path: {output_excel}")
     logger.info(f"Output Text Type: {text_type}")
     
@@ -242,13 +199,12 @@ def main(gis_conn:GIS, gdb_directory:Path, catalog_path:Path, output_excel:Path,
 
     catalog_df = pd.read_excel(io=catalog_path, sheet_name="Inventory",header=0,names=None)
 
-    catalog_rows = getCatalogRows(catalog_df, spatial_gdb_names)
+    catalog_rows = getCatalogRows(catalog_df, web_app_categories)
 
     logger.info(f"Checking Metadata...")
 
-
     for index, row in catalog_rows:
-        row_obj = DataCatalogRow(row, index, gdb_directory, master_gdb_name, gis_conn)
+        row_obj = DataCatalogRow(row, index, gdb_path, gis_conn)
 
         logger.info(row_obj.table_name)
         arcpy.AddMessage(row_obj.table_name)
@@ -293,25 +249,25 @@ def main(gis_conn:GIS, gdb_directory:Path, catalog_path:Path, output_excel:Path,
     tbl.tableStyleInfo = style ## Applies the style info to the Table Object
     ws.add_table(tbl) ## Adds the Table Object to the Worksheet object
 
-    exist_b_cols = ["B", "C", "D"]
+    exist_b_cols = ["B", "C", ]
 
-    title_cols = ["E", "F","G"]
-    title_b_col="H"
+    title_cols = ["D", "E"]
+    title_b_col="F"
 
-    description_cols = [ "I", "J", "K"]
-    description_b_col = "L"
+    description_cols = [ "G", "H"]
+    description_b_col = "I"
 
-    summary_cols = ["M", "N", "O"]
-    summary_b_col = "P"
+    summary_cols = ["J", "K"]
+    summary_b_col = "L"
 
-    tags_cols = ["Q", "R", "S"]
-    tags_b_col = "T"
+    tags_cols = ["M", "N"]
+    tags_b_col = "O"
 
-    credits_cols =  ["U", "V", "W"]
-    credits_b_col = "X"
+    credits_cols =  ["P", "Q"]
+    credits_b_col = "R"
 
-    access_cols = ["Y", "Z","AA"]
-    access_b_col = "AB"
+    access_cols = ["S", "T"]
+    access_b_col = "U"
 
 
     ## the below deals with the Column Width and Wrapping

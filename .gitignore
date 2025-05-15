@@ -17,22 +17,47 @@ secrets.json
 ## Ignore the scratch/working Notebook
 scratch.ipynb
 
-## Ignores the testing Geodatabses. Too big to add to github
-testing/geodatabases/
+
 
 ## Ignore Testing Outputs
-testing/outputs/
+testing/outputs/*
+!testing/outputs/.gitkeep
+
+## Ignore Testing Tables
+testing/data/gdb/*
+!testing/data/gdb/.gitkeep
+testing/data/table/*
+!testing/data/table/.gitkeep
+!testing/data/table/Safer Data Catalog.xlsx
 
 ## Ignore Tool Outputs
-outputs/
+outputs/CompareMetadata/*
+outputs/CompareSpatialReferences/*
+outputs/CompareStorageLocations/*
+outputs/GetFeatureClassDates/*
+outputs/UpdateMetadata/*
+
+!outputs/CompareMetadata/.gitkeep
+!outputs/CompareSpatialReferences/.gitkeep
+!outputs/CompareStorageLocations/.gitkeep
+!outputs/GetFeatureClassDates/.gitkeep
+!outputs/UpdateMetadata/.gitkeep
+!outputs/.gitkeep
 
 ## Ignore Logs
-logs/CompareMetadata/
-logs/CompareSpatialReferences/
-logs/CompareStorageLocations/
-logs/FGDBCompressionsAndDecompressions/
-logs/GetFeatureClassDates/
-logs/UpdateMetadata/
+logs/CompareMetadata/*
+logs/CompareSpatialReferences/*
+logs/CompareStorageLocations/*
+logs/GetFeatureClassDates/*
+logs/UpdateMetadata/*
+
+
+!logs/CompareMetadata/.gitkeep
+!logs/CompareSpatialReferences/.gitkeep
+!logs/CompareStorageLocations/.gitkeep
+!logs/GetFeatureClassDates/.gitkeep
+!logs/UpdateMetadata/.gitkeep
+!logs/.gitkeep
 
 
 

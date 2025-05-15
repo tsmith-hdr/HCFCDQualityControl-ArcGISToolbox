@@ -1,13 +1,6 @@
 # HCFCDQualityControl-ArcGISToolbox
 ArcGIS Python Toolbox containing all the tools needed for the Quality Control process of the HCFCD SAFER Project.
-## Setup
-If using the Standalone Scripts, the user needs to setup a secrests.json file with the following:
-``` json
-{
-    "username":"AGOL USERNAME",
-    "password":"AGOL PASSWORD"
-}
-```
+
 ## Tools
 There are three toolsets "Data Management Reports", "File Geodatabase Compression", and "Metadata Mangement"
 

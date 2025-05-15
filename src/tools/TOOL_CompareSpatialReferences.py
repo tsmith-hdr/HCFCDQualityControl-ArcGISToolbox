@@ -9,10 +9,11 @@ import os
 import openpyxl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-if str(Path(__file__).resolve().parents[1]) not in sys.path:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from hcfcd_classes.DataCatalog import DataCatalogRow
-from hcfcd_constants.values import ROOT_DIR
+if str(Path(__file__).resolve().parents[2]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.classes.DataCatalog import DataCatalogRow
+from src.constants.paths import ROOT_DIR
 
 #################################################################################################################################################################################################################
 ## Logging ## Don't Change

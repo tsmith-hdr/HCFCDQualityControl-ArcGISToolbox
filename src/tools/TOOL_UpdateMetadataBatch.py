@@ -1,24 +1,27 @@
 #################################################################################################################################################################################################################
 ## Libraries
 import sys
-import os
 import pandas as pd
 from pandas import DataFrame
 import logging
 import datetime
 from pathlib import Path
+import os
 
 import arcpy
 import arcpy.metadata as md
 from arcgis.gis import GIS, Item
 
-if str(Path(__file__).resolve().parents[1]) not in sys.path:
-    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from hcfcd_classes.DataCatalog import DataCatalogRow
-from hcfcd_constants.values import PORTAL_URL, ROOT_DIR, PORTAL_ITEM_URL
+if str(Path(__file__).resolve().parents[2]) not in sys.path:
+    sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
+
+from src.classes.DataCatalog import DataCatalogRow
+from src.constants.paths import PORTAL_URL, ROOT_DIR, PORTAL_ITEM_URL
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
 ## Logging ## Don't Change
+
+
 log_file = Path(ROOT_DIR, "logs", "UpdateMetadata", f"UpdateMetadata.log")
 
 logging.basicConfig(filename=log_file, filemode="a",format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -34,6 +37,20 @@ master_gdb_name = "Master"
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
 ## Functions
+
+def getCatalogRows(catalog_df:DataFrame, gdb_names:list=None, include_exclude:str=None):
+    """
+    This Function
+    """
+    if gdb_names and include_exclude == "Exclude":
+        return [r for r in catalog_df.iterrows() if r[1]["Spatial GDB"] not in gdb_names]
+    elif gdb_names and not include_exclude == "Include":
+        return [r for r in catalog_df.iterrows() if r[1]["Spatial GDB"] in gdb_names]
+    else:
+        return catalog_df.iterrows()
+    
+
+
 
 def updateMetadataObjects(row_obj:DataCatalogRow)->None:
     """
@@ -87,34 +104,43 @@ def updateMetadataObjects(row_obj:DataCatalogRow)->None:
     return 
 
 
-def main(gis_conn:GIS, gdb_directory:Path, catalog_path:Path, item_list:list)->None:
+
+
+def main(gis_conn:GIS, gdb_directory:Path, catalog_path:Path, include_exclude:str=None, include_exclude_list:list=None)->None:
     logger.info("^^"*200)
     logger.info("^^"*200)
     logger.info(f"Run by: {os.getlogin()}")
     logger.info(f"Run on: {datetime.datetime.now().strftime('%Y/%m/%d')}")
     logger.info(f"File GDB Directory: {gdb_directory}")
     logger.info(f"Data Catalog Path: {catalog_path}")
-    logger.info(f"Item List: {item_list}")
     logger.info(f"Starting: {datetime.datetime.now()}")
 
+    if include_exclude == "Exclude":
+        logger.info(f"File GDBs Not Included: {include_exclude_list}")
+    else:
+        logger.info(f"File GDBs Included: {include_exclude_list}")
 
-    
-    logger.info("Creating Pandas DataFrame from Data Catalog Excel and Filtering for Input Values...")
+
+    logger.info("Creating Pandas DataFrame from Data Catalog Excel...")
+    arcpy.AddMessage("Creating Pandas DataFrame from Data Catalog Excel...")
     catalog_df = pd.read_excel(io=catalog_path, sheet_name="Inventory", header=0)
 
-    df_filter_list = ["\\".join(item.split("\\")[-2:]) for item in item_list]
-    filtered_df = catalog_df.loc[(catalog_df['Spatial GDB']+".gdb\\"+catalog_df["GDB File Name"]).isin(df_filter_list)]
-    arcpy.AddMessage(df_filter_list)
-    arcpy.AddMessage(filtered_df)
-    logger.info(f"Filtered DataFrame Length: {len(filtered_df)}")
+    if include_exclude == "Include":
+        update_df = catalog_df.loc[(catalog_df['Spatial GDB'].isin(include_exclude_list))]
+    elif include_exclude == "Exclude":
+        update_df = catalog_df.loc[(~catalog_df['Spatial GDB'].isin(include_exclude_list))]
+    else:
+        update_df = catalog_df
+    
+    arcpy.AddMessage(len(update_df))
 
-    for index, row in filtered_df.iterrows():
+    for index, row in update_df.iterrows():
         row_obj = DataCatalogRow(c_row=row, index=index, gdb_directory=gdb_directory, master_gdb_name=master_gdb_name, gis_conn=gis_conn)
-        arcpy.AddMessage(row_obj)
+        arcpy.AddMessage(row_obj.table_name)
         logger.info(f"Table: {row_obj.table_name}")
 
         updateMetadataObjects(row_obj=row_obj)
-        arcpy.AddMessage("Updated")
+
     logger.info(f"Finished: {datetime.datetime.now()}")
         
 

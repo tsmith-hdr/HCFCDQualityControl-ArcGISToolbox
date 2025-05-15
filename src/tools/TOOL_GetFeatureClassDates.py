@@ -11,9 +11,10 @@ import arcpy
 import logging
 from pathlib import Path
 
-if str(Path(__file__).resolve().parents[1]) not in sys.path:
-    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from hcfcd_constants.values import ROOT_DIR
+if str(Path(__file__).resolve().parents[2]) not in sys.path:
+    sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
+
+from src.constants.paths import ROOT_DIR
 #################################################################################################################################################################################################################
 ## Logging ## Don't Change
 #log_file = os.path.join(os.getcwd(),"ftp_achd.log")
