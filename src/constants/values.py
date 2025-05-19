@@ -1,3 +1,10 @@
+import datetime 
+
+SHEET_NAME = "Test Data Catalog"
+
+DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
 
 DF_COLUMNS = ["Local - Exist",  
               "Service - Exist", 
@@ -20,7 +27,6 @@ DF_COLUMNS = ["Local - Exist",
               "Service - accessConstraints",
               "accessConstraints - Match"
               ]
-
 
 SERVICE_ITEM_LOOKUP = {"title":"title", 
                        "description":"description", 

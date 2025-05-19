@@ -14,11 +14,12 @@ from pathlib import Path
 if str(Path(__file__).resolve().parents[2]) not in sys.path:
     sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 
-from src.constants.paths import ROOT_DIR
+from src.constants.paths import LOG_DIR
+from src.constants.values import DATETIME_STR
 #################################################################################################################################################################################################################
 ## Logging ## Don't Change
 #log_file = os.path.join(os.getcwd(),"ftp_achd.log")
-log_file = Path(ROOT_DIR, "logs", "GetFeatureClassDates","GetFeatureClassDates.log")
+log_file = Path(LOG_DIR, "GetFeatureClassDates",f"GetFeatureClassDates_{DATETIME_STR}.log")
 arcpy.AddMessage(f"Log File: {log_file}")
 logging.basicConfig(filename=log_file, filemode="w",format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -50,17 +51,13 @@ def checkGdb(gdb_path:Path, workspace):
     
     
 def generateFeatureClassList()->list:
-    datasets = arcpy.ListDatasets("*", "Feature")
-    if datasets:
-        feature_class_list = []
-        arcpy.AddMessage(f"'DataSetList:{datasets}")
-        datasets.append(None)
-        for dataset in datasets:
-            [feature_class_list.append(feature_class) for feature_class in arcpy.ListFeatureClasses(wildcard="*", feature_dataset=dataset)]
-    else:
-        arcpy.AddMessage(arcpy.env.workspace)
-        feature_class_list = arcpy.ListFeatureClasses("*")
+    datasets = arcpy.ListDatasets(feature_type="Feature")
 
+    feature_class_list = []
+    arcpy.AddMessage(f"'DataSetList:{datasets}")
+    datasets.append(None)
+    for dataset in datasets:
+        [feature_class_list.append(feature_class) for feature_class in arcpy.ListFeatureClasses(feature_dataset=dataset)]
 
     
     return feature_class_list
@@ -71,7 +68,9 @@ def main(gdb_list:list, excel_path:Path, timezone:str)->DataFrame:
     logger.info(f"--- TimeZone: {timezone}")
     logger.info(f"--- Output Excel Path: {excel_path}")
     logger.info(f"--- FGDB List: {gdb_list}")
+
     arcpy.AddMessage(f"GDB List: {gdb_list}")
+    gdb_list = [g.replace("'","") for g in gdb_list]
     for gdb in gdb_list:
         arcpy.AddMessage(f"GDB: {gdb}")
         arcpy.env.workspace = gdb
@@ -81,8 +80,10 @@ def main(gdb_list:list, excel_path:Path, timezone:str)->DataFrame:
         
         feature_class_list = generateFeatureClassList()
         logger.info(f"Feature Class Count: {len(feature_class_list)}\n")
+        arcpy.AddMessage(f"Feature Class Count: {len(feature_class_list)}\n")
         for feature_class in feature_class_list:
             logger.info(f'Feature Class: {feature_class}')
+            arcpy.AddMessage(f'Feature Class: {feature_class}')
             desc = arcpy.Describe(feature_class) ## Retrieves the Object Properties of the feature class above has links to the documentation
             
             utc_modified = desc.dateModified
@@ -101,12 +102,19 @@ def main(gdb_list:list, excel_path:Path, timezone:str)->DataFrame:
             DF_LIST.append([desc.name, modified_date, accessed_date, created_date, Path(gdb).stem, gdb])
 
     logger.info(f"Generating DataFrame...")
+    print(DF_LIST)
     df = pd.DataFrame(DF_LIST, columns=DF_COLUMNS, index=False)
     logger.info(df.head(5))
 
     logger.info(f"Exporting Excel...")
     df.to_excel(excel_path)
 
+    arcpy.AddMessage(f"Excel Report Has Been Exported to:\n{excel_path}")
+    arcpy.AddMessage(f"Opening Excel Report...")
+    try:
+        os.startfile(excel_path)
+    except Exception as t:
+        arcpy.AddWarning(f"Failed to Launch Excel")
 
 
     return df

@@ -13,11 +13,12 @@ if str(Path(__file__).resolve().parents[2]) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.classes.DataCatalog import DataCatalogRow
-from src.constants.paths import ROOT_DIR
+from src.constants.paths import PORTAL_ITEM_URL, LOG_DIR
+from src.constants.values import DATETIME_STR, SHEET_NAME
 
 #################################################################################################################################################################################################################
 ## Logging ## Don't Change
-log_file = Path(ROOT_DIR, "logs", "CompareSpatialReferences", "CompareSpatialReferences.log")
+log_file = Path(LOG_DIR, "CompareSpatialReferences", f"CompareSpatialReferences_{DATETIME_STR}.log")
 logging.basicConfig(filename=log_file, filemode="w",format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
@@ -26,64 +27,9 @@ logger = logging.getLogger(__name__)
 #################################################################################################################################################################################################################
 
 
-def main(gis_conn:GIS, gdb_directory:Path, catalog_path:Path, output_excel:Path)->None:
-    logger.info(f"Starting: {datetime.datetime.now()}")
-    logger.info(f"Run by: {os.getlogin()}")
-    logger.info(f"Run on: {datetime.datetime.now().strftime('%d/%m/%Y, %H:%M:%S')}")
-    logger.info(f"GDB Directory: {gdb_directory}")
-    logger.info(f"Output Excel Path: {output_excel}")
-
-    
-    DF_DICTIONARY = {}
-
-    ## Converts the Data Catalog Excel to a Pandas DataFrame
-    catalog_df = pd.read_excel(io=catalog_path, sheet_name="Inventory",header=0,names=None)
-    arcpy.AddMessage("Retrieving Spatial References...")
-    for index, row in catalog_df.iterrows():
-        out_dict ={}
-        row_obj = DataCatalogRow(row, index, gdb_directory, "Master", gis_conn)
-        if row_obj.master_exist:
-            file_path = row_obj.getFilePath("Master")
-            if file_path:
-                out_dict["Master - Spatial Reference"] = arcpy.Describe(file_path).spatialReference.factoryCode
-                out_dict["Master - Path"] = file_path
-            else:
-                out_dict["Master - Spatial Reference"] = None
-                out_dict["Master - Path"] = None
-        if row_obj.spatial_exist:
-            file_path = row_obj.getFilePath("Spatial")
-            if file_path:
-                out_dict["Spatial - Spatial Reference"] = arcpy.Describe(file_path).spatialReference.factoryCode
-                out_dict["Spatial - Path"] = file_path
-            else:
-                out_dict["Spatial - Spatial Reference"] = None
-                out_dict["Spatial - Path"] = None
-                
-        if row_obj.service_exist:
-            service_object = row_obj.getServiceObject()
-            if service_object:
-                out_dict["Service - Spatial Reference"] = service_object.spatialReference
-                out_dict["Service - Portal URL"] = row_obj.agol_link
-            else:
-                out_dict["Service - Spatial Reference"] = None
-                out_dict["Service - Portal URL"] = None
-        
-        DF_DICTIONARY[row_obj.table_name] = out_dict
-        
-    arcpy.AddMessage("Building DataFrame...")
-    df = pd.DataFrame.from_dict(DF_DICTIONARY, "index", columns=["Master - Spatial Reference", 
-                                                                "Spatial - Spatial Reference", 
-                                                                "Service - Spatial Reference",
-                                                                "Master - Path",
-                                                                "Spatial - Path",
-                                                                "Service - Portal URL"])
-
-    arcpy.AddMessage("Exporting Excel...")
-    df.to_excel(output_excel, na_rep="N/A" ,index_label="Table Name")
-
-
+def excelFormatting(excel_path):
     logger.info(f"Formatting Excel Report...") 
-    wb = openpyxl.load_workbook(output_excel)
+    wb = openpyxl.load_workbook(excel_path)
 
     sheet_names = wb.sheetnames
 
@@ -105,16 +51,78 @@ def main(gis_conn:GIS, gdb_directory:Path, catalog_path:Path, output_excel:Path)
         for l in ["A", "B", "C", "D", "E", "F", "G"]:
             if l == "A":
                 ws.column_dimensions[l].width = 50
-            elif l in ["B", "C", "D"]:
+            elif l in ["B", "C"]:
                 ws.column_dimensions[l].width = 25
-            elif  l == "G":
+            elif  l == "F":
                 ws.column_dimensions[l].width = 90
             else:
                 ws.column_dimensions[l].width = 175
 
-    wb.save(output_excel)
+    wb.save(excel_path)
 
     del wb
+
+
+def getSpatialReferences(dataframe, gdb_path, gis_conn)->dict:
+    output_dict = {}
+
+    arcpy.AddMessage("Retrieving Spatial References...")
+
+    for index, row in dataframe.iterrows():
+        temp_dict ={}
+        row_obj = DataCatalogRow(c_row=row, index=index, gdb_path=gdb_path, gis_conn=gis_conn)
+        if row_obj.local_exist:
+            file_path = row_obj.gdb_item_path
+            if file_path:
+                temp_dict["Local - Spatial Reference"] = arcpy.Describe(file_path).spatialReference.factoryCode
+                temp_dict["Local - Path"] = file_path
+            else:
+                temp_dict["Local - Spatial Reference"] = None
+                temp_dict["Local - Path"] = None
+
+        if row_obj.service_exist:
+            service_object = row_obj.getServiceObject()
+            if service_object:
+                temp_dict["Service - Spatial Reference"] = service_object.spatialReference
+                temp_dict["Service - Portal URL"] = f"{PORTAL_ITEM_URL}{row_obj.agol_item_id}"
+            else:
+                temp_dict["Service - Spatial Reference"] = None
+                temp_dict["Service - Portal URL"] = None
+        
+        output_dict[row_obj.table_name] = temp_dict
+
+    return output_dict
+
+def main(gis_conn:GIS, gdb_path:str, catalog_path:str, output_excel:str)->None:
+    logger.info(f"Starting: {datetime.datetime.now()}")
+    logger.info(f"Run by: {os.getlogin()}")
+    logger.info(f"Run on: {datetime.datetime.now().strftime('%d/%m/%Y, %H:%M:%S')}")
+    logger.info(f"GDB Directory: {gdb_path}")
+    logger.info(f"Output Excel Path: {output_excel}")
+
+
+    ## Converts the Data Catalog Excel to a Pandas DataFrame
+    catalog_df = pd.read_excel(io=catalog_path, sheet_name=SHEET_NAME,header=0,names=None)
+
+    df_dictionary = getSpatialReferences(catalog_df, gdb_path, gis_conn)
+        
+    arcpy.AddMessage("Building DataFrame...")
+    df = pd.DataFrame.from_dict(df_dictionary, "index", columns=["Local - Spatial Reference", 
+                                                                "Service - Spatial Reference",
+                                                                "Local - Path",
+                                                                "Service - Portal URL"])
+
+    arcpy.AddMessage("Exporting Excel...")
+    df.to_excel(output_excel, na_rep="N/A" ,index_label="Table Name")
+
+    excelFormatting(excel_path=output_excel)
+
+    arcpy.AddMessage(f"Excel Report Has Been Exported to:\n{output_excel}")
+    arcpy.AddMessage(f"Opening Excel Report...")
+    try:
+        os.startfile(output_excel)
+    except Exception as t:
+        arcpy.AddWarning(f"Failed to Launch Excel")
 
     return
 

@@ -6,21 +6,23 @@ from arcgis.gis import GIS
 import pandas as pd
 import ctypes
 import requests
+import re
 
 from pathlib import Path
 
 if str(Path(__file__).resolve().parents[0]) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
     
-from hcfcd_tools import TOOL_UpdateMetadataBatch
-from hcfcd_tools import TOOL_UpdateMetadataIndividual
-from hcfcd_tools import TOOL_CompareSpatialReferences
-from hcfcd_tools import TOOL_GetFeatureClassDates
-from hcfcd_tools import TOOL_CompareMetadata
-from hcfcd_tools import TOOL_CompareStorageLocations
+from src.tools import TOOL_UpdateMetadataBatch
+from src.tools import TOOL_UpdateMetadataIndividual
+from src.tools import TOOL_CompareSpatialReferences
+from src.tools import TOOL_GetFeatureClassDates
+from src.tools import TOOL_CompareMetadata
+from src.tools import TOOL_CompareStorageLocations
 
 
-from hcfcd_constants.paths import PORTAL_URL
+from src.constants.paths import PORTAL_URL, OUTPUTS_DIR
+from src.constants.values import DATETIME_STR
 
 class Toolbox:
     def __init__(self):
@@ -33,9 +35,9 @@ class Toolbox:
         self.tools = [UpdateMetadata_b,
                       UpdateMetadata_i,
                       CompareSpatialReference,
+                      CompareStorageLocations,
                       FeatureClassDates,
                       CompareMetadata,
-                      CompareStorageLocations,
                       GrabItemsMD,
                       GrabWebItemsMD]
 
@@ -50,13 +52,15 @@ class UpdateMetadata_b:
 
     def getParameterInfo(self):
         """Define the tool parameters."""
-        gdb_directory = arcpy.Parameter(
-            displayName="File GDB Directory",
-            name="gdb_directory",
-            datatype="DEFolder",
+        gdb_path = arcpy.Parameter(
+            displayName="File GDB Path",
+            name="gdb_path",
+            datatype="DEWorkspace",
             parameterType="Required",
             direction="Input")
         
+        gdb_path.filter.list = ["Local Database"]
+
         catalog_path = arcpy.Parameter(
             displayName="Data Catalog Path (Excel)",
             name="catalog_path",
@@ -87,14 +91,14 @@ class UpdateMetadata_b:
         
         
         
-        params = [gdb_directory, catalog_path, include_exclude, include_exclude_list]
+        params = [gdb_path, catalog_path, include_exclude, include_exclude_list]
         
         return params
 
     def isLicensed(self):
         """Set whether the tool is licensed to execute."""
-        if self.gis_conn.url != PORTAL_URL:
-            return False
+        # if self.gis_conn.url != PORTAL_URL:
+        #     return False
         return True
 
     def updateParameters(self, parameters):
@@ -102,12 +106,14 @@ class UpdateMetadata_b:
         validation is performed.  This method is called whenever a parameter
         has been changed."""
         
-        gdb_directory = parameters[0]
+        gdb_path = parameters[0]
         include_exclude = parameters[2]
         include_exclude_list = parameters[3]
 
-        if gdb_directory.altered:
-            include_exclude_list.filter.list = [Path(i).stem for i in Path(gdb_directory.valueAsText).iterdir() if i.suffix == ".gdb"]
+        arcpy.env.workspace = gdb_path.valueAsText
+
+        if gdb_path.altered:
+            include_exclude_list.filter.list = [i for i in arcpy.ListDatasets(feature_type="Feature")]
 
         if include_exclude.altered:
             if include_exclude.value in ["Include", "Exclude"]:
@@ -121,11 +127,12 @@ class UpdateMetadata_b:
     def updateMessages(self, parameters):
         """Modify the messages created by internal validation for each tool
         parameter. This method is called after internal validation."""
+
         return
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        gdb_directory = parameters[0].valueAsText
+        gdb_path = parameters[0].valueAsText
         catalog_path = parameters[1].valueAsText   
         include_exclude = parameters[2].valueAsText
         if parameters[3].valueAsText:
@@ -135,7 +142,7 @@ class UpdateMetadata_b:
         arcpy.AddMessage(include_exclude_list)
         if __name__ == "__main__":
             TOOL_UpdateMetadataBatch.main(gis_conn=self.gis_conn,
-                                        gdb_directory=Path(gdb_directory),
+                                        gdb_path=Path(gdb_path),
                                         catalog_path=Path(catalog_path),
                                         include_exclude=include_exclude,
                                         include_exclude_list=include_exclude_list
@@ -171,13 +178,14 @@ class UpdateMetadata_i:
         
         catalog_path.filter.list=["xlsx"]
 
-        gdb_directory = arcpy.Parameter(
-            displayName="File Geodatabase Directory (Folder)",
-            name="gdb_directory",
-            datatype="DEFolder",
+        gdb_path = arcpy.Parameter(
+            displayName="File GDB Path",
+            name="gdb_path",
+            datatype="DEWorkspace",
             parameterType="Required",
-            direction="Input",
-            enabled=True)
+            direction="Input")
+        
+        gdb_path.filter.list = ["Local Database"]
     
 
         item_type = arcpy.Parameter(
@@ -210,13 +218,13 @@ class UpdateMetadata_i:
         
         
 
-        params = [catalog_path, gdb_directory, item_type, featureclass, raster]
+        params = [catalog_path, gdb_path, item_type, featureclass, raster]
         return params
 
     def isLicensed(self):
         """Set whether the tool is licensed to execute."""
-        if self.gis_conn.url != PORTAL_URL:
-            return False
+        # if self.gis_conn.url != PORTAL_URL:
+        #     return False
         return True
 
     def updateParameters(self, parameters):
@@ -246,11 +254,14 @@ class UpdateMetadata_i:
         """Modify the messages created by internal validation for each tool
         parameter. This method is called after internal validation."""
         catalog_path = parameters[0]
+        gdb_path = parameters[1]
         if catalog_path.value:
             df = pd.read_excel(catalog_path.valueAsText)
 
-            concat_list = list(df['Spatial GDB']+".gdb\\"+df["GDB File Name"])
-            catalog_path.setWarningMessage(concat_list)
+            #concat_list = list(f"{gdb_path.valueAsText}\\"+df["Table Name"])
+            concat_list = df["Table Name"].to_list()
+            message_list = "\n".join(concat_list)
+            catalog_path.setWarningMessage(message_list)
 
         item_type = parameters[2]
         feature_classes = parameters[3]
@@ -259,10 +270,11 @@ class UpdateMetadata_i:
         if item_type.altered:
             if feature_classes.valueAsText or rasters.valueAsText:
                 split_item = feature_classes.valueAsText if item_type.valueAstext == "Feature Class" else rasters.valueAsText
-                item_list = [i.replace("'", "") for i in split_item.split(";")]
-                check_list = ["\\".join(item.split("\\")[-2:]) for item in item_list]
+                item_list = [i.replace("'","").split("\\")[-1] for i in split_item.split(";")]
+            
+                #check_list = ["\\".join(item.split("\\")[-2:]) for item in item_list]
 
-                for i in check_list:
+                for i in item_list:
                     if i not in concat_list:
                         if item_type.valueAsText == "Feature Class":
                             feature_classes.setErrorMessage(f"{i} not in Data Catalog")
@@ -274,7 +286,7 @@ class UpdateMetadata_i:
     def execute(self, parameters, messages):
         """The source code of the tool."""
         catalog_path = parameters[0].valueAsText
-        gdb_directory = parameters[1].valueAsText
+        gdb_path = parameters[1].valueAsText
         
         item_type = parameters[2].valueAsText
         featureclasses = parameters[3].valueAsText
@@ -289,7 +301,7 @@ class UpdateMetadata_i:
         arcpy.AddMessage(item_list)
         if __name__ == "__main__":
             TOOL_UpdateMetadataIndividual.main(gis_conn=self.gis_conn,
-                                               gdb_directory=Path(gdb_directory),
+                                               gdb_path=gdb_path,
                                                catalog_path=Path(catalog_path),
                                                item_list=cleaned_items)
 
@@ -313,9 +325,9 @@ class CompareSpatialReference:
 
     def getParameterInfo(self):
         """Define the tool parameters."""
-        gdb_directory = arcpy.Parameter(
-            displayName="File GDB Directory",
-            name="gdb_directory",
+        gdb_path = arcpy.Parameter(
+            displayName="File GDB Path",
+            name="gdb_path",
             datatype="DEFolder",
             parameterType="Required",
             direction="Input")
@@ -337,8 +349,9 @@ class CompareSpatialReference:
             direction="Output")
         
         output_excel.filter.list = ["xlsx"]
+        output_excel.value = os.path.join(OUTPUTS_DIR, "CompareSpatialReferences", f"CompareSpatialReferences_{DATETIME_STR}.xlsx")
 
-        params = [gdb_directory, catalog_path, output_excel]
+        params = [gdb_path, catalog_path, output_excel]
         return params
 
     def isLicensed(self):
@@ -360,14 +373,14 @@ class CompareSpatialReference:
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        gdb_directory = parameters[0].valueAsText
+        gdb_path = parameters[0].valueAsText
         catalog_path = parameters[1].valueAsText
         output_excel = parameters[2].valueAsText
         if __name__ == "__main__":
             TOOL_CompareSpatialReferences.main(gis_conn=self.gis_conn,
-                                           gdb_directory=Path(gdb_directory),
-                                           catalog_path=Path(catalog_path),
-                                           output_excel=Path(output_excel)
+                                           gdb_path=gdb_path,
+                                           catalog_path=catalog_path,
+                                           output_excel=output_excel
                                            )
         return
 
@@ -406,6 +419,7 @@ class FeatureClassDates:
             direction="Output")
         
         excel_path.filter.list = ["xlsx"]    
+        excel_path.value = os.path.join(OUTPUTS_DIR, "FeatureClassDates", f"FeatureClassDates_{DATETIME_STR}.xlsx")
 
         time_zone = arcpy.Parameter(
             displayName="Local Timezone",
@@ -469,12 +483,14 @@ class CompareMetadata:
 
     def getParameterInfo(self):
         """Define the tool parameters."""
-        gdb_directory = arcpy.Parameter(
-            displayName="FGDB Directory Path",
-            name="gdb_directory",
-            datatype="DEFolder",
+        gdb_path = arcpy.Parameter(
+            displayName="File GDB Path",
+            name="gdb_path",
+            datatype="DEWorkspace",
             parameterType="Required",
             direction="Input")
+        
+        gdb_path.filter.list = ["Local Database"]
 
         catalog_path = arcpy.Parameter(
             displayName="Data Catalog Path (Excel)",
@@ -485,14 +501,6 @@ class CompareMetadata:
         
         catalog_path.filter.list = ["xlsx"]
 
-        output_excel = arcpy.Parameter(
-            displayName="Output Report Path (Excel)",
-            name="output_excel",
-            datatype="DEFile",
-            parameterType="Required",
-            direction="Output")
-        
-        output_excel.filter.list = ["xlsx"]
 
         text_type = arcpy.Parameter(
             displayName="Metadata Output Text Type",
@@ -504,17 +512,39 @@ class CompareMetadata:
         text_type.filter.type = "ValueList"
         text_type.filter.list = ["Plain", "HTML"]
 
-        spatial_gdb_names = arcpy.Parameter(
-            displayName="FGDBs to be evaluated",
+        output_excel = arcpy.Parameter(
+            displayName="Output Report Path (Excel)",
+            name="output_excel",
+            datatype="DEFile",
+            parameterType="Required",
+            direction="Output")
+        
+        output_excel.filter.list = ["xlsx"]
+        
+
+
+        web_app_categories = arcpy.Parameter(
+            displayName="Web App Categories to be evaluated",
             name="spatial_gdb_names",
             datatype="GPString",
             parameterType="Optional",
             direction="Input",
             multiValue=True)
         
+        include_exclude = arcpy.Parameter(
+            displayName="Include/Exclude",
+            name="include_exclude",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            multiValue=False)
+        
+        include_exclude.filter.type = "Value"
+        include_exclude.filter.list = ["Include", "Exclude"]
+        
 
 
-        params = [gdb_directory, catalog_path, output_excel, text_type, spatial_gdb_names]
+        params = [gdb_path, catalog_path, text_type, output_excel, include_exclude,web_app_categories]
 
         return params
 
@@ -528,13 +558,20 @@ class CompareMetadata:
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
-        gdb_directory = parameters[0]
-        spatial_gdb_names = parameters[4]
+        gdb_path = parameters[0]
+        text_type = parameters[2]
+        out_excel = parameters[3]
+        web_app_categories = parameters[5]
 
-        if gdb_directory.altered:
-            gdb_list = [p.stem for p in Path(gdb_directory.valueAsText).iterdir() if p.suffix == ".gdb"]
-            spatial_gdb_names.filter.type = "ValueList"
-            spatial_gdb_names.filter.list = gdb_list
+        if gdb_path.altered:
+            arcpy.env.workspace = gdb_path.valueAsText
+            dataset_list = [dataset for dataset in arcpy.ListDatasets(feature_type="Feature")]
+            web_app_categories.filter.type = "ValueList"
+            web_app_categories.filter.list = dataset_list
+
+        if text_type.altered and not text_type.hasBeenValidated:
+            out_excel.value = os.path.join(OUTPUTS_DIR, "CompareMetadata", f"CompareMetadata_{text_type.valueAsText}_{DATETIME_STR}.xlsx")
+        
         return
 
     def updateMessages(self, parameters):
@@ -544,19 +581,22 @@ class CompareMetadata:
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        gdb_directory = parameters[0].valueAsText
+        gdb_path = parameters[0].valueAsText
         catalog_path = parameters[1].valueAsText
-        output_excel = parameters[2].valueAsText
-        text_type = parameters[3].valueAsText
-        spatial_gdb_names = None if parameters[4].valueAsText is None else parameters[4].valueAsText.split(";")
+        output_excel = parameters[3].valueAsText
+        text_type = parameters[2].valueAsText
+        web_app_categories = None if parameters[5].valueAsText is None else parameters[5].valueAsText.split(";")
+        include_exclude = parameters[4]
 
         if __name__ == "__main__":
+            arcpy.AddMessage(output_excel)
             TOOL_CompareMetadata.main(gis_conn=self.gis_conn,
-                                  gdb_directory=Path(gdb_directory),
-                                  catalog_path=Path(catalog_path),
-                                  output_excel=Path(output_excel),
+                                  gdb_path=gdb_path,
+                                  catalog_path=catalog_path,
+                                  output_excel=output_excel,
                                   text_type=text_type,
-                                  spatial_gdb_names=spatial_gdb_names
+                                  web_app_categories=web_app_categories,
+                                  include_exclude=include_exclude
                                 )
 
 
@@ -580,12 +620,14 @@ class CompareStorageLocations:
 
     def getParameterInfo(self):
         """Define the tool parameters."""
-        gdb_directory = arcpy.Parameter(
-            displayName="File GDB Directory",
-            name="gdb_directory",
-            datatype="DEFolder",
+        gdb_path = arcpy.Parameter(
+            displayName="File GDB Path",
+            name="gdb_path",
+            datatype="DEWorkspace",
             parameterType="Required",
             direction="Input")
+        
+        gdb_path.filter.list = ["Local Database"]
         
         catalog_path = arcpy.Parameter(
             displayName="Data Catalog Path (Excel)",
@@ -604,8 +646,9 @@ class CompareStorageLocations:
             direction="Output")
         
         output_excel.filter.list = ["xlsx"]
+        output_excel.value = os.path.join(OUTPUTS_DIR, "CompareStorageLocations", f"CompareStorageLocations_{DATETIME_STR}.xlsx")
 
-        params = [gdb_directory, catalog_path, output_excel]
+        params = [gdb_path, catalog_path, output_excel]
         return params
 
     def isLicensed(self):
@@ -627,15 +670,15 @@ class CompareStorageLocations:
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        gdb_directory = parameters[0].valueAsText
+        gdb_path = parameters[0].valueAsText
         catalog_path = parameters[1].valueAsText
         excel_path = parameters[2].valueAsText
 
         if __name__ == "__main__":
             TOOL_CompareStorageLocations.main(gis_conn=self.gis_conn,
-                                          gdb_directory=Path(gdb_directory),
-                                          catalog_path=Path(catalog_path),
-                                          excel_path=Path(excel_path)
+                                          gdb_path=gdb_path,
+                                          catalog_path=catalog_path,
+                                          excel_path=excel_path
                                           )
 
         return
