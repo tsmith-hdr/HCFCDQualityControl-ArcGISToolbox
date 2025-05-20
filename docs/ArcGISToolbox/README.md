@@ -1,3 +1,8 @@
+# Usefull Links 
+Define Parameters in Python Toolbox. Also includes how to set up filters. <a href="https://pro.arcgis.com/en/pro-app/latest/arcpy/geoprocessing_and_python/defining-parameters-in-a-python-toolbox.htm">Here</a>
+Python Toolbox Data Types: <a href="https://pro.arcgis.com/en/pro-app/latest/arcpy/geoprocessing_and_python/defining-parameter-data-types-in-a-python-toolbox.htm">Here</a>
+
+
 # Example Tool
 ```
 import arcpy
