@@ -4,9 +4,8 @@ import os
 import arcpy
 from arcgis.gis import GIS
 import pandas as pd
-import ctypes
 import requests
-import re
+
 
 from pathlib import Path
 

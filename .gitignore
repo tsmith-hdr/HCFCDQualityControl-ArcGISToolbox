@@ -64,4 +64,4 @@ logs/UpdateMetadata/*
 ## Ignore all Standalone Scripts Except for the Zipped File
 standalone/SCRIPT_*
 
-!.StandaloneScripts.zip
+!.standalone_.zip
