@@ -18,7 +18,7 @@ The overall workflow will be the metadata from the Local File Geodatabase item w
 
 ## Initial Setup
 - If you do not have Git or GitHub, you can download the repository as a zipped folder. \
-![](image.png)
+![](docs/image.png)
 - Extract the folder to the project. 
 Within the APRX make a new folder connection to the extracted directory. 
 - When you expand the directory you will be able to use the toolbox normally.
