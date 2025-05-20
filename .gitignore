@@ -26,6 +26,7 @@ testing/outputs/*
 ## Ignore Testing Tables
 testing/data/gdb/*
 !testing/data/gdb/.gitkeep
+!testing/data/gdb/QC_Test.gdb.zip
 testing/data/table/*
 !testing/data/table/.gitkeep
 !testing/data/table/Safer Data Catalog.xlsx
