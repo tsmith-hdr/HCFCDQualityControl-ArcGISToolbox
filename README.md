@@ -10,7 +10,7 @@ There are three toolsets "Data Management Reports" and "Metadata Mangement"
 - <span style="color:red">(Deprecated) </span><i>Get Feature Class Dates (Excel Report):</i> Pulls the Created, Modified, and Last Accessed Dates of each table listed in the Data Catalog. 
 
 ### Metadata Management
-The overall workflow will be the metadata from the Local File Geodatabase item will be pushed to the associated AGOL Service listed in the Data Catalog (Excel). Some metadata such as the summary, access constraints, and credits have specific structure and will overwrite any previously entered values in the Local FGDB and AGOL Service. 
+The overall workflow will be the metadata from the Local File Geodatabase item will be pushed to the associated AGOL Service listed in the Data Catalog (Excel). the metadata items summary, access constraints, and credits have specific structure and will overwrite any previously entered values in the Local FGDB and AGOL Service. 
 - <i>Compare Metadata (Excel Report):</i> Iterates over the Data Catalog Items and returns an excel report comparing Title, Description, Summary, Tags, Credits, and Access Information for each item in the Local File GDB and the AGOL Service. Can be returned as either HTML or Plain Text. This tool will be used to inspect what items need to be updated.
 - <i>Retrieve Item's Metadata (HTML):</i> Consoles out the metadata of either the raster or feature class with the description returned in HTML
 - <i>Update Metadata (Batch):</i> This will update all of items. There is an optional parameter to have the process include/exclude ceertian Web App Categories/Feature Datasets in the Local FGDB.
