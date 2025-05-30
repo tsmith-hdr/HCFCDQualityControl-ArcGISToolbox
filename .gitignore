@@ -37,13 +37,18 @@ outputs/CompareSpatialReferences/*
 outputs/CompareStorageLocations/*
 outputs/GetFeatureClassDates/*
 outputs/UpdateMetadata/*
+outputs/UpdateServiceMetadataBatch/*
+outputs/BackupServices/*
 
 !outputs/CompareMetadata/.gitkeep
 !outputs/CompareSpatialReferences/.gitkeep
 !outputs/CompareStorageLocations/.gitkeep
 !outputs/GetFeatureClassDates/.gitkeep
 !outputs/UpdateMetadata/.gitkeep
+!outputs/UpdateServiceMetadataBatch/.gitkeep
+!outputs/BackupServices/.gitkeep
 !outputs/.gitkeep
+
 
 ## Ignore Logs
 logs/CompareMetadata/*
@@ -51,13 +56,16 @@ logs/CompareSpatialReferences/*
 logs/CompareStorageLocations/*
 logs/GetFeatureClassDates/*
 logs/UpdateMetadata/*
-
+logs/BackupServices/*
+logs/UpdateServiceMetadataBatch/*
 
 !logs/CompareMetadata/.gitkeep
 !logs/CompareSpatialReferences/.gitkeep
 !logs/CompareStorageLocations/.gitkeep
 !logs/GetFeatureClassDates/.gitkeep
 !logs/UpdateMetadata/.gitkeep
+!logs/BackupServices/.gitkeep
+!logs/UpdateServiceMetadataBatch/.gitkeep
 !logs/.gitkeep
 
 
