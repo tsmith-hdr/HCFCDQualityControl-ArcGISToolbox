@@ -87,6 +87,7 @@ def updateFeatureClassMetadata(featureclass_dict:dict)->None:
     meta = md.Metadata(featureclass_dict["Feature Class Path"])
     meta.summary = f"Created as part of a backup on {DATETIME_STR.split('-')[0]} performed by {os.getlogin()}"
     meta.tags = f"Layer Name:{featureclass_dict['Layer Name']}, Layer URL:{featureclass_dict['Layer URL']}, Service Item Id:{featureclass_dict['Service Item Id']}"
+    meta.credits = featureclass_dict["Credits"]
     meta.save()
 
     return
@@ -140,7 +141,7 @@ def main(gis_conn:GIS, gdb_directory:str,spatial_reference:str, excel_report:str
             
 
                 df_list.append(out_dict)
-
+                out_dict[f"Credits:{item.accessInformation}"]
                 updateFeatureClassMetadata(featureclass_dict=out_dict)
 
     arcpy.AddMessage(f"Compressing Local GDB Items...")
@@ -150,7 +151,7 @@ def main(gis_conn:GIS, gdb_directory:str,spatial_reference:str, excel_report:str
         compression_status = "Successful" if len(uncompressed) == 0 else "Not Successful"
     arcpy.AddMessage(f"Compression: {compression_status}")
 
-    
+
     meta = md.Metadata(str(local_gdb))
     meta.summary = f"This File GDB is a backup of the Feature Services. Run by {os.getlogin()} using AGOL User {gis_conn.users.me.username}"
 
