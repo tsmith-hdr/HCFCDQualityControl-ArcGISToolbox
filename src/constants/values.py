@@ -34,3 +34,12 @@ SERVICE_ITEM_LOOKUP = {"title":"title",
                        "tags":"tags", 
                        "credits":"accessInformation", 
                        "accessConstraints":"licenseInfo"}
+
+LOCAL_SERVICE_LOOKUP = {
+    "Title":"title",
+    "Description":"description",
+    "Tags":"tags",
+    "Summary":"snippet",
+    "Credits":"accessInformation",
+    "Terms of Use":"licenseInfo"
+}

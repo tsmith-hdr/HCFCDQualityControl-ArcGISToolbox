@@ -5,6 +5,15 @@ import arcpy
 from arcgis.gis import GIS
 import pandas as pd
 import requests
+import shutil
+from pathlib import Path
+from zipfile import ZipFile
+
+
+import arcpy
+from arcpy import metadata as md
+
+from arcgis.gis import GIS, ItemTypeEnum, Item
 
 
 from pathlib import Path
@@ -18,7 +27,10 @@ from src.tools import TOOL_CompareSpatialReferences
 from src.tools import TOOL_GetFeatureClassDates
 from src.tools import TOOL_CompareMetadata
 from src.tools import TOOL_CompareStorageLocations
+from src.tools import TOOL_UpdateServiceMetadataBatch
+from src.tools import TOOL_BackupServices
 
+from src.functions import utility
 
 from src.constants.paths import PORTAL_URL, OUTPUTS_DIR
 from src.constants.values import DATETIME_STR
@@ -38,7 +50,9 @@ class Toolbox:
                       FeatureClassDates,
                       CompareMetadata,
                       GrabItemsMD,
-                      GrabWebItemsMD]
+                      GrabWebItemsMD,
+                      BackupServices,
+                      UpdateServicesMeta]
 
 
 class UpdateMetadata_b:
@@ -466,9 +480,6 @@ class FeatureClassDates:
         """This method takes place after outputs are processed and
         added to the display."""
         return
-
-
-
 
 
 class CompareMetadata:
@@ -906,6 +917,273 @@ class GrabWebItemsMD:
             
             arcpy.AddMessage(f"Item Url:\n{item_url}\n")
 
+        return
+
+    def postExecute(self, parameters):
+        """This method takes place after outputs are processed and
+        added to the display."""
+        return
+    
+
+class BackupServices:
+
+    def __init__(self):
+        """Define the tool (tool name is the name of the class)."""
+        self.label = "Service Backup"
+        self.description = ""
+        self.category = "Backup Management"
+        self.gis = GIS("Pro")
+
+    def getParameterInfo(self):
+        """Define the tool parameters."""
+        gdb_directory = arcpy.Parameter(
+            displayName="File GDB Folder",
+            name="gdb_directory",
+            datatype="DEFolder",
+            parameterType="Required",
+            direction="Input")
+        
+        spatial_reference = arcpy.Parameter(
+            displayName="Spatial Reference",
+            name="spatial_reference",
+            datatype="GPSpatialReference",
+            parameterType="Required",
+            direction="Input")
+        
+        include_exclude = arcpy.Parameter(
+            displayName="Include/Exclude Flag",
+            name="include_exclude",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            category="Folder Filter")
+        include_exclude.filter.type = "ValueList"
+        include_exclude.filter.list = ["Include", "Exclude"]
+
+        include_exclude_list = arcpy.Parameter(
+            displayName="AGOL Folder List",
+            name="include_exclude_list",
+            datatype="GPString",
+            parameterType="optional",
+            direction="Input",
+            enabled=False,
+            multiValue=True,
+            category="Folder Filter")
+        include_exclude_list.filter.type="ValueList"
+
+
+        email_from = arcpy.Parameter(
+            displayName="Email From",
+            name="email_from",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            category="Email")
+        
+
+        email_to = arcpy.Parameter(
+            displayName="Email To",
+            name="email_to",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            multiValue=True,
+            category="Email")
+        
+        backup_dir = arcpy.Parameter(
+            displayName="Backup Directory",
+            name="backup_dir",
+            datatype="DEFolder",
+            parameterType="Required",
+            direction="Input")
+        
+
+        excel_report = arcpy.Parameter(
+            displayName="Excel Report",
+            name="excel_report",
+            datatype="DEFile",
+            parameterType="Required",
+            direction="Output")
+        excel_report.filter.list = ["xlsx"]
+        excel_report.value = os.path.join(OUTPUTS_DIR, "BackupServices", f"BackupServices_{DATETIME_STR}.xlsx")
+
+
+        params = [gdb_directory, spatial_reference,include_exclude, include_exclude_list,email_from, email_to, backup_dir, excel_report]
+        return params
+
+    def isLicensed(self):
+        """Set whether the tool is licensed to execute."""
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter. This method is called after internal validation."""
+        include_exclude = parameters[2]
+        include_exclude_list = parameters[3]
+        email_from = parameters[4]
+        email_to = parameters[5]
+
+        if include_exclude.altered and not include_exclude.hasBeenValidated:
+            if include_exclude.valueAsText in ["Include", "Exclude"]:
+                include_exclude_list.enabled = True
+                include_exclude_list.filter.list = [i.name for i in self.gis.content.folders.list()]
+        elif not include_exclude.altered:
+            include_exclude_list.values = None
+            include_exclude_list.enabled = False
+                
+
+        if email_from.altered and not email_from.hasBeenValidated:
+            if not email_from.valueAsText.lower().endswith("@hdrinc.com"):
+                email_from.setErrorMessage("Senders email needs to be from an HDR inc. Email")
+        
+        if email_to.altered and not email_to.hasBeenValidated:
+            if email_to.valueAsText:
+                email_list = email_to.valueAsText.split(";")
+                for email in email_list:
+                    if not email.lower().endswith("@hdrinc.com"):
+                        email_to.setErrorMessage(f"All Emails need to be an HDR inc. email.\n{email}")
+
+        return
+
+    def execute(self, parameters, messages):
+        """The source code of the tool."""
+        #[gdb_directory, spatial_reference, include_exclude, include_exclude_list,email_from, email_to, backup_dir]
+        gdb_dir = parameters[0].valueAsText
+        spatial_reference = arcpy.SpatialReference(text=parameters[1].valueAsText)
+        excel_report = parameters[7].valueAsText
+        backup_dir = parameters[6].valueAsText
+        include_exclude = parameters[2].valueAsText
+        include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")]
+        email_from = parameters[4].valueAsText
+        email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")]
+
+        if __name__ == "__main__":
+            TOOL_BackupServices.main(gis_conn=self.gis, 
+                                     gdb_directory=gdb_dir,
+                                     spatial_reference=spatial_reference,
+                                     excel_report=excel_report,
+                                     backup_dir=backup_dir,
+                                     include_exclude=include_exclude,
+                                     include_exclude_list=include_exclude_list,
+                                     email_from=email_from,
+                                     email_to=email_to)
+        return
+
+    def postExecute(self, parameters):
+        """This method takes place after outputs are processed and
+        added to the display."""
+        return
+
+class UpdateServicesMeta:
+    def __init__(self):
+        """Define the tool (tool name is the name of the class)."""
+        self.label = "Batch Update Service Metadata (Excel Report)"
+        self.description = ""
+        self.category = "Metadata Management"
+        self.gis = GIS("Pro")
+
+    def getParameterInfo(self):
+        """Define the tool parameters."""
+        item_types = arcpy.Parameter(
+            displayName="Item Types",
+            name="item_types",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input",
+            multiValue=True)
+        
+        item_types.filter.type = "ValueList"
+        #item_types.filter.list = ["Map Service", "Feature Service", 'Web Map', 'Web Experience','StoryMap','Dashboard','Vector Tile Service']
+
+        agol_folders = arcpy.Parameter(
+            displayName="AGOL Folders",
+            name="agol_folder",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input",
+            multiValue=True)
+        
+        agol_folders.filter.type = "ValueList"
+        agol_folders.filter.list = [folder.name for folder in self.gis.content.folders.list()]
+
+        metadata_dict = arcpy.Parameter(
+            displayName="Metadata Dictionary",
+            name="metadata_dict",
+            datatype="GPValueTable",
+            parameterType="Required",
+            direction="Input")
+        
+        metadata_dict.columns = [['GPString', "Item"], ["GPString", "Value"]]
+        metadata_dict.filters[0].type = 'ValueList'
+        metadata_dict.filters[0].list = ["Title", "Summary", "Description", "Terms of Use", "Credits", "Tags"]
+
+        output_excel = arcpy.Parameter(
+            displayName="Excel Report Path",
+            name="output_excel",
+            datatype="DEFile",
+            parameterType="Required",
+            direction="Output")
+        
+        output_excel.filter.list = ["xlsx"]
+        output_excel.value = os.path.join(OUTPUTS_DIR, "UpdateServiceMetadataBatch", f"UpdateServiceMetadataBatch_{DATETIME_STR}.xlsx")
+
+
+        params = [agol_folders, item_types,metadata_dict, output_excel]
+        return params
+
+    def isLicensed(self):
+        """Set whether the tool is licensed to execute."""
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+        agol_folders = parameters[0]
+        item_types = parameters[1]
+
+        if agol_folders.altered and not agol_folders.hasBeenValidated:
+            if agol_folders.valueAsText:
+                item_types.filter.list = list(set([i.type for folder_name in agol_folders.valueAsText.split(";") for i in self.gis.content.folders.get(folder_name.replace("'","")).list()]))
+
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter. This method is called after internal validation."""
+        metadata = parameters[2]
+        metadata_str = metadata.valueAsText
+        if metadata.altered:
+            metadata_vt = arcpy.ValueTable(2)
+            metadata_vt.loadFromString(metadata_str)
+            for i in range(0, metadata_vt.rowCount):
+                md_item = metadata_vt.getValue(i, 0)
+                md_value = metadata_vt.getValue(i, 1)
+                if md_value is None or md_value.strip() == '':
+                    metadata.setWarningMessage(f"If a Value is left blank, the associated metadata item will not be updated.\nProblem Metadata Item: {md_item}")
+
+        return
+
+    def execute(self, parameters, messages):
+        """The source code of the tool."""
+        item_types_str = parameters[1].valueAsText
+        item_types_list = [i.replace("'","") for i in item_types_str.split(";")]
+
+        metadata_str = parameters[2].valueAsText
+        metadata_dictionary = utility.valueTableToDictionary(metadata_str)
+        arcpy.AddMessage(metadata_dictionary)
+        output_excel = parameters[3].valueAsText
+
+        agol_folders = [f.replace("'","") for f in parameters[0].valueAsText.split(";")]
+
+        if __name__ == "__main__":
+            TOOL_UpdateServiceMetadataBatch.main(gis_conn=self.gis, item_types=item_types_list, agol_folders = agol_folders,metadata_dictionary=metadata_dictionary, output_excel=output_excel)
         return
 
     def postExecute(self, parameters):
