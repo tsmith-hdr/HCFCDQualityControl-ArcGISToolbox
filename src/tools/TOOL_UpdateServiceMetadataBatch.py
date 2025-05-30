@@ -58,6 +58,7 @@ def main(gis_conn:GIS, item_types:str,agol_folders:list, metadata_dictionary:dic
     update_df = pd.DataFrame(update_list, columns=["Item Title", "Update Successful", "Item URL"])
     arcpy.AddMessage(metadata_dictionary)
     metadata_dictionary["item_types"] = item_types
+    metadata_dictionary["agol_folders"] = agol_folders
     arcpy.AddMessage(metadata_dictionary)
     param_df = pd.DataFrame.from_dict(metadata_dictionary, orient="index",columns=["Value"])
    
