@@ -141,7 +141,7 @@ def main(gis_conn:GIS, gdb_directory:str,spatial_reference:str, excel_report:str
             
 
                 df_list.append(out_dict)
-                out_dict[f"Credits:{item.accessInformation}"]
+                out_dict["Credits"]=item.accessInformation
                 updateFeatureClassMetadata(featureclass_dict=out_dict)
 
     arcpy.AddMessage(f"Compressing Local GDB Items...")
