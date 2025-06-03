@@ -5,6 +5,7 @@ import logging
 import shutil
 import pandas as pd
 from pathlib import Path
+from importlib import reload  
 from zipfile import ZipFile
 
 
@@ -22,15 +23,21 @@ from src.functions import utility
 ########################################################################################################################################
 ## Logging ## Don't Change
 
+reload(logging)
 log_file =os.path.join(LOG_DIR, "BackupServices",f"BackupServices_{DATETIME_STR}.log")
 
-logging.basicConfig(filename=log_file, filemode="w",format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-
+logging.getLogger().disabled = True
 logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 logging.getLogger("requests_oauthlib.oauth2_session").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler(log_file, mode='w')
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
+
 
 ########################################################################################################################################
 arcpy.env.overwriteOutput=True
@@ -42,6 +49,7 @@ def createFeatureDataset(gdb_path:str, dataset_name:str, spatial_reference:arcpy
     formatted_name = dataset_name.translate({ord(c): "" for c in "!@#$%^&*()[] {};:,./<>?\|`~-=_+"})
     if formatted_name not in [d for d in arcpy.ListDatasets(feature_type="Feature")]:
         arcpy.AddMessage(f"Creating Feature Dataset: {formatted_name}...")
+        logger.info(f"Creating Feature Dataset: {formatted_name}...")
         arcpy.management.CreateFeatureDataset(out_dataset_path=gdb_path,
                                                 out_name=formatted_name,
                                                 spatial_reference=spatial_reference)
@@ -69,13 +77,13 @@ def exportFeatureService(layer, gdb_path:str, folder_name:str, spatial_reference
 
             count+=1
 
-        arcpy.AddMessage(formatted_layer_name)
     try:
         featureclass_path = os.path.join(gdb_path, folder_name, formatted_layer_name)
         with arcpy.EnvManager(outputCoordinateSystem=spatial_reference, preserveGlobalIds=True):
             arcpy.conversion.ExportFeatures(in_features=layer_url,
                                             out_features=featureclass_path)
     except Exception as f:
+        logger.error(f"{layer_name:30s} {layer_id:30s}")
         arcpy.AddWarning(f"Layer Failed to Export:\n{layer_name:30s} {layer_id:30s}")
         
 
@@ -110,29 +118,50 @@ def getFolderObjs(gis_conn, include_exclude, include_exclude_list):
 
 
 
-def main(gis_conn:GIS, gdb_directory:str,spatial_reference:str, excel_report:str,backup_dir:str,include_exclude:str=None, include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
+def main(gis_conn:GIS, gdb_directory:str,spatial_reference:arcpy.SpatialReference, excel_report:str,backup_dir:str,include_exclude:str=None, include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
+    logger.info(f"GIS Connection: {gis_conn}")
+    logger.info(f"GDB Directory: {gdb_directory}")
+    logger.info(f"Spatial Reference: {spatial_reference.factoryCode}")
+    logger.info(f"Excel Report: {excel_report}")
+    logger.info(f"Backup Directory: {backup_dir}")
+    logger.info(f"Include/Exclude Flag: {include_exclude}")
+    logger.info(f"Folder List: {include_exclude_list}")
+    logger.info(f"Email From: {email_from}")
+    logger.info(f"Email To: {email_to}")
+    logger.info("~~"*100)
+    logger.info("~~"*100)
+
     df_list = []
-    arcpy.AddMessage(f"Creating Local GDB...")
+
+    logger.info(f"Creating Local File GDB...")
     local_gdb = arcpy.management.CreateFileGDB(out_folder_path=gdb_directory, 
-                                               out_name=f"ServiceBackup_{DATETIME_STR.split('-')[0]}")
-    arcpy.AddMessage(f"Local GDB Path: {local_gdb}")
+                                               out_name=f"ServiceBackup_{DATETIME_STR.split('-')[0]}"
+                                               )
+    logger.info(f"Local GDB Path: {local_gdb}")
 
     folder_objs = getFolderObjs(gis_conn, include_exclude, include_exclude_list)
+    logger.debug(f"Folder Count: {len(folder_objs)}")
 
 
     for folder in folder_objs:
-        arcpy.AddMessage(f"AGOL Folder: {folder}")
-        formatted_folder_name = folder.name.translate({ord(c): "" for c in "!@#$%^&*()[] {};:,./<>?\|`~-=_+"})
-        arcpy.AddMessage(f"Formatted AGOL Folder Name: {formatted_folder_name}")
-        item_list = [i for i in folder.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
-        arcpy.AddMessage(f"AGOL Item Count: {len(item_list)}")
+        logger.info(f"AGOL Folder: {folder}")
+        formatted_folder_name = folder.name.translate({ord(c): "" for c in "!@#$%^&*()[] {};:,./<>?\|`~-=_+"}) ## Removes any special characters
+
+
+        logger.info(f"Formatted AGOL Folder Name: {formatted_folder_name}")
+        item_list = [i for i in folder.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)] ## We only want the Feature Services.
+
+        logger.info(f"AGOL Item Count: {len(item_list)}")
+
         if item_list:
-            createFeatureDataset(gdb_path=str(local_gdb), dataset_name=formatted_folder_name, spatial_reference=spatial_reference)
+            ## We may have a folley for using hardcoding only one single spatial reference, but for most projects they only use one. When the layer is exported it will be projected to the stated Spatial Reference. 
+            createFeatureDataset(gdb_path=str(local_gdb), dataset_name=formatted_folder_name, spatial_reference=spatial_reference) 
 
         for item in item_list:
-            arcpy.AddMessage(f"AGOL Item: {item}")
-            arcpy.AddMessage(f"Layer Count: {len(item.layers)}")
+            logger.info(f"AGOL Item: {item}")
+            logger.info(f"Layer Count: {len(item.layers)}")
             for layer in item.layers:
+                logger.info(f"Layer: {layer.properties['name']}")
                 out_dict = exportFeatureService(layer=layer,
                                                 gdb_path=str(local_gdb),
                                                 folder_name=formatted_folder_name,
@@ -141,15 +170,19 @@ def main(gis_conn:GIS, gdb_directory:str,spatial_reference:str, excel_report:str
             
 
                 df_list.append(out_dict)
-                out_dict[f"Credits:{item.accessInformation}"]
+                out_dict["Credits"]=item.accessInformation ## I am capturing the credits, because the editors are going to manually enter when they make any changes to the service in the Services Access Information Property
+                
                 updateFeatureClassMetadata(featureclass_dict=out_dict)
 
-    arcpy.AddMessage(f"Compressing Local GDB Items...")
+
+    ## Here we are compressing the file gdb this is a lossless function. We want to add this process to make sure that the archived records are unable to be editied.
+    logger.info(f"Compressing Local GDB Items...")
     with arcpy.EnvManager(workspace=str(local_gdb)):
         arcpy.management.CompressFileGeodatabaseData(str(local_gdb), lossless=True)
         uncompressed = [f for dataset in arcpy.ListDatasets(feature_type="Feature") for f in arcpy.ListFeatureClasses(feature_dataset=dataset) if not arcpy.Describe(f).isCompressed]
         compression_status = "Successful" if len(uncompressed) == 0 else "Not Successful"
-    arcpy.AddMessage(f"Compression: {compression_status}")
+    logger.info(f"Compression: {compression_status}")
+
 
 
     meta = md.Metadata(str(local_gdb))
@@ -170,48 +203,69 @@ def main(gis_conn:GIS, gdb_directory:str,spatial_reference:str, excel_report:str
     meta.description = gdb_description
     meta.save()
 
-    arcpy.AddMessage(f"Creating Pandas Data Frames...")
+
+    logger.info(f"Creating Pandas Data Frames...")
     param_df = pd.DataFrame.from_dict(param_dict, orient="index", columns=["Value"])
     update_df = pd.DataFrame(df_list, columns=["Feature Class Name","Layer Name", "Service Item Id","Feature Class Path", "Layer URL"])
     failed_compress_df = pd.DataFrame(uncompressed, columns=["Feature Class Name"])
 
-    arcpy.AddMessage(f"Exporting Pandas Data Frames...")
+
+
+    logger.info(f"Exporting Pandas Data Frames...")
     try:
         with pd.ExcelWriter(excel_report) as writer:
             update_df.to_excel(writer, sheet_name="UpdatedItems", index=False)
             param_df.to_excel(writer, sheet_name="InputParams", header=True,index=True, index_label="Parameter")
             failed_compress_df.to_excel(writer, sheet_name="FailedCompress", index=False)
     except Exception as e:
-        arcpy.AddError(f"Failed to Export Excel Report.\n{e}")
 
-    arcpy.AddMessage(f"Zipping Local GDB and Excel Reports...")
+        logger.error(f"Failed to Export Excel Report. {e}")
+
+
+    ## Here we are compress together the excel report and the local filegdb. zipping these items will make it more efficient to send from local machine to the backup directory. 
+    logger.info(f"Zipping Local GDB and Excel Reports...")
     try:
         zipped = os.path.join(OUTPUTS_DIR, "BackupServices", f"BackupServices_{DATETIME_STR}.zip")
         with ZipFile(zipped, 'w') as zip:
             zip.write(str(local_gdb), os.path.basename(str(local_gdb)))
             zip.write(excel_report, os.path.basename(excel_report))
-            arcpy.AddMessage('All files zipped successfully!')
+            zip.write(log_file, os.path.basename(log_file))
+
+            logger.info('All files zipped successfully!')
     except Exception as r:
         arcpy.AddError(f"Failed to Zip Files.\n{r}")
+        logger.error(f"Failed to Zip Files.\n{r}")
 
 
-    arcpy.AddMessage("Copying Zipped Folder...")
-    shutil.copy(zipped, os.path.join(backup_dir, os.path.basename(zipped)))
+
+    ## Copies the zipped folder of the local file gdb to the designated directory to hold the weekly backups. 
+    ### If we want to I can add logic to unzip the folder...
+    logger.info("Copying Zipped Folder...")
+    try:
+        shutil.copy(zipped, os.path.join(backup_dir, os.path.basename(zipped)))
+    except Exception as u:
+        logger.error(f"Failed Copy: {u}")
+
+    # Checks if the zipped folder was successfully copied.
     if os.path.exists(os.path.join(backup_dir, os.path.basename(zipped))):
-        arcpy.AddMessage(f"Excel Report Has Been Exported to:\n{excel_report}")
+        logger.info(f"Excel Report Has Been Exported to: {excel_report}")
     else:
-        arcpy.AddError(f"Excel Report Failed to Export to:\n{excel_report}")
+        logger.error(f"Excel Report Failed to Export to: {excel_report}")
 
+
+    ## If the email from parameter is entered, there will be an attempt to send an email with the excel report and log file.
     if email_from:
-        arcpy.AddMessage("Sending Email...")
-        utility.sendEmail(sendTo=",".join(email_to), sendFrom=email_from, subject=f"Service Backup {DATETIME_STR.split('-')[0]}", message_text="Completed Backup", text_type="plain", attachments=[excel_report])
-        
+        logger.info("Sending Email...")
+        result = utility.sendEmail(sendTo=",".join(email_to), sendFrom=email_from, subject=f"Service Backup {DATETIME_STR.split('-')[0]}", message_text="Completed Backup", text_type="plain", attachments=[excel_report, log_file])
+        logger.info(result)
     
-    arcpy.AddMessage(f"Opening Excel Report...")
+
+    ## Trys to open the excel report. Logs warning if unable to open.
+    logger.info(f"Opening Excel Report...")
     try:
         os.startfile(excel_report)
     except Exception as t:
-        arcpy.AddWarning(f"Failed to Launch Excel")
+        logger.warning(f"Failed to Launch Excel")
 
     
     return
