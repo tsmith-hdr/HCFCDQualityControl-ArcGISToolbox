@@ -21,8 +21,6 @@ def getCatalogRows(catalog_df:DataFrame, web_app_categories:list=None,include_ex
 
 class DataCatalogRow():
     def __init__(self, c_row, index, gdb_path, gis_conn):
-        
-        
         self._excel_index = index + 2 
         self._gis_conn = gis_conn
         self._gdb_path = gdb_path

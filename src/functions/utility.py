@@ -35,9 +35,20 @@ def getValueFromJSON(json_file, key):
     except Exception as e:
         print("Error: ", e)
 
-
+def isTaskScheduler()->bool:
+    """
+    Checks to see if the standalone file is being run from the console or run in a scheduled task.
+    """
+    # Check for an environment variable that might indicate Task Scheduler
+    print(os.getenv("SESSIONNAME"))
+    print(os.getenv('SCHEDULER_LAUNCH'))
+    return os.getenv('SESSIONNAME') != 'Console' and os.getenv('SCHEDULER_LAUNCH') is None
 
 def authenticateAgolConnection(portal_url):
+    """
+    Allows the user of the standalone script enter their user credentials. This is to avoid having to store credentials. 
+    The portal url is set in the 
+    """
     print(f"-- If using Arcgis Pro as Authentication Credentials. Input 'Pro' for username and input nothing for password and Press 'Enter' to continue.\n** You will need to be sure you are logged in to your account and correct Portal in ArcGIS Pro")
     print(f"-- Please enter 'Pro' or your Username and Password for {portal_url} --")
     count = 0
