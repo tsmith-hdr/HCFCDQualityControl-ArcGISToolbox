@@ -10,8 +10,7 @@ from pathlib import Path
 import arcpy
 from arcgis.gis import GIS
 
-if str(Path(__file__).resolve().parents[2]) not in sys.path:
-    sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.classes.DataCatalog import DataCatalogRow
 from src.functions import meta

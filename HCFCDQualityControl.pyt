@@ -21,14 +21,15 @@ from pathlib import Path
 if str(Path(__file__).resolve().parents[0]) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
     
-from src.tools import TOOL_UpdateMetadataBatch
-from src.tools import TOOL_UpdateMetadataIndividual
-from src.tools import TOOL_CompareSpatialReferences
-from src.tools import TOOL_GetFeatureClassDates
-from src.tools import TOOL_CompareMetadata
-from src.tools import TOOL_CompareStorageLocations
-from src.tools import TOOL_UpdateServiceMetadataBatch
-from src.tools import TOOL_BackupServices
+from src.tools.metadatamanagement import TOOL_UpdateMetadataBatch
+from src.tools.metadatamanagement import TOOL_UpdateMetadataIndividual
+from src.tools.datamanagement import TOOL_CompareSpatialReferences
+from src.tools.datamanagement import TOOL_GetFeatureClassDates
+from src.tools.metadatamanagement import TOOL_CompareMetadata
+from src.tools.datamanagement import TOOL_CompareStorageLocations
+from src.tools.metadatamanagement import TOOL_UpdateServiceMetadataBatch
+from src.tools.backupmanagement import TOOL_BackupServices
+from src.tools.datamanagement import TOOL_AppendiciesReport
 
 from src.functions import utility
 
@@ -52,7 +53,8 @@ class Toolbox:
                       GrabItemsMD,
                       GrabWebItemsMD,
                       BackupServices,
-                      UpdateServicesMeta]
+                      UpdateServicesMeta,
+                      AppendiciesReport]
 
 
 class UpdateMetadata_b:
@@ -1184,6 +1186,137 @@ class UpdateServicesMeta:
 
         if __name__ == "__main__":
             TOOL_UpdateServiceMetadataBatch.main(gis_conn=self.gis, item_types=item_types_list, agol_folders = agol_folders,metadata_dictionary=metadata_dictionary, output_excel=output_excel)
+        return
+
+    def postExecute(self, parameters):
+        """This method takes place after outputs are processed and
+        added to the display."""
+        return
+    
+
+class AppendiciesReport:
+    def __init__(self):
+        """Define the tool (tool name is the name of the class)."""
+        self.label = "Appendicies Report (Excel Report)"
+        self.description = ""
+        self.category = "Data Management Reports"
+        self.gis = GIS("Pro")
+
+    def getParameterInfo(self):
+        """Define the tool parameters."""
+        agol_folders = arcpy.Parameter(
+            displayName="AGOL Folders",
+            name="agol_folder",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input",
+            multiValue=True)
+        
+        agol_folders.filter.type = "ValueList"
+        agol_folders.filter.list = [folder.name for folder in self.gis.content.folders.list()]
+
+
+        include_exclude = arcpy.Parameter(
+            displayName= "Include/Exclude Flag",
+            name="include_exclude",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input")
+        
+        include_exclude.value = "All"
+        include_exclude.filter.type = "ValueList"
+        include_exclude.filter.list = ["Include", "Exclude", "All"]
+
+        include_exclude_list = arcpy.Parameter(
+            displayName= "Include/Exclude List",
+            name="include_exclude_list",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            multiValue=True,
+            enabled=False)
+        
+        include_exclude_list.filter.type = "ValueList"
+        
+        output_excel = arcpy.Parameter(
+            displayName="Excel Report Path",
+            name="output_excel",
+            datatype="DEFile",
+            parameterType="Required",
+            direction="Output")
+        
+        output_excel.filter.list = ["xlsx"]
+        output_excel.value = os.path.join(OUTPUTS_DIR, "AppendiciesReports", f"AppendiciesReport_{DATETIME_STR}.xlsx")
+
+        include_records = arcpy.Parameter(
+            displayName="Include Records",
+            name="include_records",
+            direction="Input",
+            datatype="GPString",
+            parameterType="Optional")
+        
+        include_records.value = "Overview Only"
+        include_records.filter.type = "ValueList"
+        include_records.filter.list = ["Overview Only", "Include Records"]        
+
+
+        params = [agol_folders,include_exclude,include_exclude_list, output_excel, include_records]
+        return params
+
+    def isLicensed(self):
+        """Set whether the tool is licensed to execute."""
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+        agol_folders = parameters[0]
+        include_exclude = parameters[1]
+        include_exclude_list = parameters[2]
+
+
+
+        if agol_folders.altered:
+            if include_exclude.valueAsText in ["Include", "Exclude"]:
+                include_exclude_list.enabled = True
+                agol_folder_objs = [self.gis.content.folders.get(f.replace("'", "")) for f in agol_folders.valueAsText.split(";")]
+                include_exclude_list.filter.list = [i.name for folder_obj in agol_folder_objs for i in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
+            else:
+                include_exclude_list.value = None
+                include_exclude_list.enabled = False
+            
+
+    
+
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter. This method is called after internal validation."""
+
+        return
+
+    def execute(self, parameters, messages):
+        """The source code of the tool."""
+        include_exclude_flag = parameters[1].valueAsText
+
+        include_exclude_list = [i.replace("'","") for i in parameters[2].valueAsText] if parameters[2].valueAsText else None
+
+        output_excel = parameters[3].valueAsText
+
+        agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
+
+        include_records = parameters[4].valueAsText
+
+        if __name__ == "__main__":
+            TOOL_AppendiciesReport.main(gis_conn=self.gis, 
+                                        agol_folders=agol_folders,
+                                        include_exclude_flag=include_exclude_flag, 
+                                        output_excel=output_excel,
+                                        include_records=include_records,
+                                        include_exclude_list=include_exclude_list
+                                        )
         return
 
     def postExecute(self, parameters):

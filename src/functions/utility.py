@@ -8,6 +8,7 @@ import sys
 import os
 import getpass
 from pathlib import Path
+from datetime import datetime
 
 import arcpy
 from arcgis.gis import GIS
@@ -121,3 +122,10 @@ def valueTableToDictionary(metadata_str:str)->dict:
         out_dict[LOCAL_SERVICE_LOOKUP[md_item]] = md_value.strip()
         
     return out_dict
+
+
+def epochToString(epoch):
+    timestamp = datetime.fromtimestamp(epoch)
+    time_string = timestamp.strftime("%m/%d/%Y")
+
+    return (timestamp,time_string)

@@ -14,9 +14,7 @@ from arcgis.gis import GIS
 import openpyxl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-if str(Path(__file__).resolve().parents[2]) not in sys.path:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.constants.paths import ROOT_DIR, PORTAL_ITEM_URL
 from src.constants.values import SHEET_NAME

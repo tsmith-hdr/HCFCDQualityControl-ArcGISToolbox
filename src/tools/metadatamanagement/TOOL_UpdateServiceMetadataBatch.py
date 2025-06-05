@@ -18,8 +18,7 @@ import openpyxl
 from openpyxl.styles import Alignment
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-if str(Path(__file__).resolve().parents[2]) not in sys.path:
-    sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 import  src.classes.DataCatalog as dc 
 from src.functions import meta
