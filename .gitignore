@@ -10,8 +10,6 @@ secrets.json
 
 
 ## Ignore all XML Files associated with the Python Toolbox
-*.xml
-*.pyt.xml
 
 
 ## Ignore the scratch/working Notebook
@@ -38,6 +36,7 @@ outputs/CompareStorageLocations/*
 outputs/GetFeatureClassDates/*
 outputs/UpdateMetadata/*
 outputs/UpdateServiceMetadataBatch/*
+outputs/AppendiciesReports/*
 outputs/BackupServices/*
 
 !outputs/CompareMetadata/.gitkeep
@@ -47,6 +46,7 @@ outputs/BackupServices/*
 !outputs/UpdateMetadata/.gitkeep
 !outputs/UpdateServiceMetadataBatch/.gitkeep
 !outputs/BackupServices/.gitkeep
+!outputs/AppendiciesReports/.gitkeep
 !outputs/.gitkeep
 
 
@@ -58,6 +58,7 @@ logs/GetFeatureClassDates/*
 logs/UpdateMetadata/*
 logs/BackupServices/*
 logs/UpdateServiceMetadataBatch/*
+logs/AppendiciesReport/*
 
 !logs/CompareMetadata/.gitkeep
 !logs/CompareSpatialReferences/.gitkeep

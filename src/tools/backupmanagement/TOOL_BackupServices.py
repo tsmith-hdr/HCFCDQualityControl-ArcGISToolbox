@@ -14,8 +14,7 @@ from arcpy import metadata as md
 
 from arcgis.gis import GIS, ItemTypeEnum, Item
 
-if str(Path(__file__).resolve().parents[2]) not in sys.path:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.constants.values import DATETIME_STR
 from src.constants.paths import LOG_DIR, OUTPUTS_DIR
