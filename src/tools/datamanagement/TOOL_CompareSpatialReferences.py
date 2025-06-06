@@ -1,31 +1,42 @@
-from arcgis.gis import GIS
-import arcpy
+import os
+import sys
+import logging
+import datetime
 import pandas as pd
 from pathlib import Path
-import logging
-import sys
-import datetime
-import os
+from importlib import reload
+
 import openpyxl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
+import arcpy
+from arcgis.gis import GIS
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.classes.DataCatalog import DataCatalogRow
 from src.constants.paths import PORTAL_ITEM_URL, LOG_DIR
-from src.constants.values import DATETIME_STR, SHEET_NAME
-
+from src.constants.values import SHEET_NAME
 #################################################################################################################################################################################################################
-## Logging ## Don't Change
-log_file = Path(LOG_DIR, "CompareSpatialReferences", f"CompareSpatialReferences_{DATETIME_STR}.log")
-logging.basicConfig(filename=log_file, filemode="w",format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+## Globals
+DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+#################################################################################################################################################################################################################
+## Logging
+reload(logging)
+log_file =os.path.join(LOG_DIR, "CompareSpatialReferences",f"CompareSpatialReferences_{DATETIME_STR}.log")
+
+logging.getLogger().disabled = True
 logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 logging.getLogger("requests_oauthlib.oauth2_session").setLevel(logging.WARNING)
-logger = logging.getLogger(__name__)
-#################################################################################################################################################################################################################
 
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler(log_file, mode='w')
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
+#################################################################################################################################################################################################################
 
 def excelFormatting(excel_path):
     logger.info(f"Formatting Excel Report...") 

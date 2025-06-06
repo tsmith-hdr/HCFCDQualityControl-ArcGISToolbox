@@ -5,8 +5,9 @@ import sys
 import itertools
 import pandas as pd
 import logging
-from pathlib import Path
 import datetime
+from pathlib import Path
+from importlib import reload
 
 import arcpy
 from arcgis.gis import GIS
@@ -16,19 +17,29 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from src.constants.paths import ROOT_DIR, PORTAL_ITEM_URL
+from src.constants.paths import ROOT_DIR, PORTAL_ITEM_URL, LOG_DIR
 from src.constants.values import SHEET_NAME
 import src.classes.DataCatalog as dc
 #################################################################################################################################################################################################################
-## Logging ## Don't Change
-#log_file = os.path.join(os.getcwd(),"ftp_achd.log")
-log_file = Path(ROOT_DIR, "logs", "CompareStorageLocations","CompareStorageLocations.log")
-logging.basicConfig(filename=log_file, filemode="w",format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+##Globals
+DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+#################################################################################################################################################################################################################
+#################################################################################################################################################################################################################
+## Logging
+reload(logging)
+log_file =os.path.join(LOG_DIR, "CompareStorageLocations",f"CompareStorageLocations_{DATETIME_STR}.log")
+
+logging.getLogger().disabled = True
 logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 logging.getLogger("requests_oauthlib.oauth2_session").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
-#################################################################################################################################################################################################################
+file_handler = logging.FileHandler(log_file, mode='w')
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 #################################################################################################################################################################################################################
 ## Functions
 def createServicesList(gis_conn:GIS)->list:
