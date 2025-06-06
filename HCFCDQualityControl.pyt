@@ -1,40 +1,22 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
-import arcpy
-from arcgis.gis import GIS
-import pandas as pd
+import sys
 import requests
-import shutil
+import datetime
+import pandas as pd
 from pathlib import Path
-from zipfile import ZipFile
-
 
 import arcpy
-from arcpy import metadata as md
+from arcgis.gis import GIS, ItemTypeEnum
 
-from arcgis.gis import GIS, ItemTypeEnum, Item
-
-
-from pathlib import Path
-
-if str(Path(__file__).resolve().parents[0]) not in sys.path:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
     
-from src.tools.metadatamanagement import TOOL_UpdateMetadataBatch
-from src.tools.metadatamanagement import TOOL_UpdateMetadataIndividual
-from src.tools.datamanagement import TOOL_CompareSpatialReferences
-from src.tools.datamanagement import TOOL_GetFeatureClassDates
-from src.tools.metadatamanagement import TOOL_CompareMetadata
-from src.tools.datamanagement import TOOL_CompareStorageLocations
-from src.tools.metadatamanagement import TOOL_UpdateServiceMetadataBatch
-from src.tools.backupmanagement import TOOL_BackupServices
-from src.tools.datamanagement import TOOL_AppendiciesReport
-
 from src.functions import utility
-
 from src.constants.paths import PORTAL_URL, OUTPUTS_DIR
-from src.constants.values import DATETIME_STR
+#############################################################################################################################
+## Globals
+DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+#############################################################################################################################
 
 class Toolbox:
     def __init__(self):
@@ -156,6 +138,8 @@ class UpdateMetadata_b:
         arcpy.AddMessage(include_exclude)
         arcpy.AddMessage(include_exclude_list)
         if __name__ == "__main__":
+            from src.tools.metadatamanagement import TOOL_UpdateMetadataBatch
+
             TOOL_UpdateMetadataBatch.main(gis_conn=self.gis_conn,
                                         gdb_path=Path(gdb_path),
                                         catalog_path=Path(catalog_path),
@@ -315,6 +299,8 @@ class UpdateMetadata_i:
         cleaned_items = [i.replace("'", "") for i in item_list]
         arcpy.AddMessage(item_list)
         if __name__ == "__main__":
+            from src.tools.metadatamanagement import TOOL_UpdateMetadataIndividual
+
             TOOL_UpdateMetadataIndividual.main(gis_conn=self.gis_conn,
                                                gdb_path=gdb_path,
                                                catalog_path=Path(catalog_path),
@@ -392,6 +378,8 @@ class CompareSpatialReference:
         catalog_path = parameters[1].valueAsText
         output_excel = parameters[2].valueAsText
         if __name__ == "__main__":
+            from src.tools.datamanagement import TOOL_CompareSpatialReferences
+
             TOOL_CompareSpatialReferences.main(gis_conn=self.gis_conn,
                                            gdb_path=gdb_path,
                                            catalog_path=catalog_path,
@@ -471,6 +459,8 @@ class FeatureClassDates:
         time_zone = parameters[2].valueAsText
 
         if __name__ == "__main__":
+            from src.tools.datamanagement import TOOL_GetFeatureClassDates
+
             TOOL_GetFeatureClassDates.main(gdb_list=gdb_list.split(";"),
                                        excel_path=Path(output_excel),
                                        timezone=time_zone
@@ -601,7 +591,8 @@ class CompareMetadata:
         include_exclude = parameters[4]
 
         if __name__ == "__main__":
-            arcpy.AddMessage(output_excel)
+            from src.tools.metadatamanagement import TOOL_CompareMetadata
+
             TOOL_CompareMetadata.main(gis_conn=self.gis_conn,
                                   gdb_path=gdb_path,
                                   catalog_path=catalog_path,
@@ -687,6 +678,8 @@ class CompareStorageLocations:
         excel_path = parameters[2].valueAsText
 
         if __name__ == "__main__":
+            from src.tools.datamanagement import TOOL_CompareStorageLocations
+
             TOOL_CompareStorageLocations.main(gis_conn=self.gis_conn,
                                           gdb_path=gdb_path,
                                           catalog_path=catalog_path,
@@ -959,6 +952,7 @@ class BackupServices:
             parameterType="Optional",
             direction="Input",
             category="Folder Filter")
+        
         include_exclude.filter.type = "ValueList"
         include_exclude.filter.list = ["Include", "Exclude"]
 
@@ -1006,6 +1000,7 @@ class BackupServices:
             datatype="DEFile",
             parameterType="Required",
             direction="Output")
+        
         excel_report.filter.list = ["xlsx"]
         excel_report.value = os.path.join(OUTPUTS_DIR, "BackupServices", f"BackupServices_{DATETIME_STR}.xlsx")
 
@@ -1066,6 +1061,8 @@ class BackupServices:
         email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")]
 
         if __name__ == "__main__":
+            from src.tools.backupmanagement import TOOL_BackupServices
+
             TOOL_BackupServices.main(gis_conn=self.gis, 
                                      gdb_directory=gdb_dir,
                                      spatial_reference=spatial_reference,
@@ -1185,6 +1182,8 @@ class UpdateServicesMeta:
         agol_folders = [f.replace("'","") for f in parameters[0].valueAsText.split(";")]
 
         if __name__ == "__main__":
+            from src.tools.metadatamanagement import TOOL_UpdateServiceMetadataBatch
+
             TOOL_UpdateServiceMetadataBatch.main(gis_conn=self.gis, item_types=item_types_list, agol_folders = agol_folders,metadata_dictionary=metadata_dictionary, output_excel=output_excel)
         return
 
@@ -1301,7 +1300,7 @@ class AppendiciesReport:
         """The source code of the tool."""
         include_exclude_flag = parameters[1].valueAsText
 
-        include_exclude_list = [i.replace("'","") for i in parameters[2].valueAsText] if parameters[2].valueAsText else None
+        include_exclude_list = [i.replace("'","") for i in parameters[2].valueAsText.split(";")] if parameters[2].valueAsText else None
 
         output_excel = parameters[3].valueAsText
 
@@ -1310,6 +1309,8 @@ class AppendiciesReport:
         include_records = parameters[4].valueAsText
 
         if __name__ == "__main__":
+            from src.tools.datamanagement import TOOL_AppendiciesReport
+
             TOOL_AppendiciesReport.main(gis_conn=self.gis, 
                                         agol_folders=agol_folders,
                                         include_exclude_flag=include_exclude_flag, 

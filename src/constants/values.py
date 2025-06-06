@@ -2,7 +2,7 @@ import datetime
 
 SHEET_NAME = "Test Data Catalog"
 
-DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
 
 
 

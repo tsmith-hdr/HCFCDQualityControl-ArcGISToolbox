@@ -3,6 +3,7 @@ import re
 import sys
 import logging
 import shutil
+import datetime
 import pandas as pd
 from pathlib import Path
 from importlib import reload  
@@ -12,16 +13,20 @@ from zipfile import ZipFile
 import arcpy
 from arcpy import metadata as md
 
-from arcgis.gis import GIS, ItemTypeEnum, Item
+from arcgis.gis import GIS, ItemTypeEnum
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from src.constants.values import DATETIME_STR
 from src.constants.paths import LOG_DIR, OUTPUTS_DIR
 from src.functions import utility
 ########################################################################################################################################
-## Logging ## Don't Change
-
+## Environments
+arcpy.env.overwriteOutput=True
+########################################################################################################################################
+##Globals
+DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+#############################################################################################################################
+## Logging
 reload(logging)
 log_file =os.path.join(LOG_DIR, "BackupServices",f"BackupServices_{DATETIME_STR}.log")
 
@@ -30,19 +35,14 @@ logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 logging.getLogger("requests_oauthlib.oauth2_session").setLevel(logging.WARNING)
 
-logger = logging.getLogger(__name__)
+logger=logging.getLogger(__name__)
 file_handler = logging.FileHandler(log_file, mode='w')
 formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
-
-
-########################################################################################################################################
-arcpy.env.overwriteOutput=True
-
-
-
+print(logger)
+#############################################################################################################################
 def createFeatureDataset(gdb_path:str, dataset_name:str, spatial_reference:arcpy.SpatialReference)->None:
     arcpy.env.workspace = str(gdb_path)
     formatted_name = dataset_name.translate({ord(c): "" for c in "!@#$%^&*()[] {};:,./<>?\|`~-=_+"})
@@ -115,7 +115,7 @@ def getFolderObjs(gis_conn, include_exclude, include_exclude_list):
     else:
         return [folder for folder in gis_conn.content.folders.list()]
 
-
+print(logger)
 
 def main(gis_conn:GIS, gdb_directory:str,spatial_reference:arcpy.SpatialReference, excel_report:str,backup_dir:str,include_exclude:str=None, include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
     logger.info(f"GIS Connection: {gis_conn}")
@@ -265,6 +265,5 @@ def main(gis_conn:GIS, gdb_directory:str,spatial_reference:arcpy.SpatialReferenc
         os.startfile(excel_report)
     except Exception as t:
         logger.warning(f"Failed to Launch Excel")
-
-    
     return
+

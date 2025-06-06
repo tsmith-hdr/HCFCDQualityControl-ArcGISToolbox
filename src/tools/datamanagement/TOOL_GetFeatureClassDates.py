@@ -5,28 +5,37 @@ import sys
 import pytz
 from pandas import DataFrame
 import pandas as pd
-from datetime import datetime
+import datetime
 from arcpy.da import SearchCursor
 import arcpy
 import logging
 from pathlib import Path
+from importlib import reload
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.constants.paths import LOG_DIR
-from src.constants.values import DATETIME_STR
-#################################################################################################################################################################################################################
-## Logging ## Don't Change
-#log_file = os.path.join(os.getcwd(),"ftp_achd.log")
-log_file = Path(LOG_DIR, "GetFeatureClassDates",f"GetFeatureClassDates_{DATETIME_STR}.log")
-arcpy.AddMessage(f"Log File: {log_file}")
-logging.basicConfig(filename=log_file, filemode="w",format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-
-logger = logging.getLogger(__name__)
 #######################################################################################################################################################################################################
 ## Global Parameters
+DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 DF_LIST = []
 DF_COLUMNS = ["Feature Class Name", "Last Edited Date", "Last Accessed Date", "Created Date", "FGDB Name", "FGDB Path"]
+#################################################################################################################################################################################################################
+## Logging
+reload(logging)
+log_file = Path(LOG_DIR, "GetFeatureClassDates",f"GetFeatureClassDates_{DATETIME_STR}.log")
+
+logging.getLogger().disabled = True
+logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+logging.getLogger("requests_oauthlib.oauth2_session").setLevel(logging.WARNING)
+
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler(log_file, mode='w')
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 #######################################################################################################################################################################################################
 ## Functions
 

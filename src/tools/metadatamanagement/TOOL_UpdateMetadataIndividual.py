@@ -6,6 +6,7 @@ import pandas as pd
 import logging
 import datetime
 from pathlib import Path
+from importlib import reload
 
 import arcpy
 from arcgis.gis import GIS
@@ -17,17 +18,24 @@ from src.functions import meta
 from src.constants.paths import LOG_DIR
 from src.constants.values import SHEET_NAME
 #################################################################################################################################################################################################################
+## Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 #################################################################################################################################################################################################################
-## Logging ## Don't Change
+## Logging
+reload(logging)
 log_file = Path(LOG_DIR, "UpdateMetadata", f"Individual_UpdateMetadata_{DATETIME_STR}.log")
 
-logging.basicConfig(filename=log_file, filemode="w",format='%(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.getLogger().disabled = True
 logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 logging.getLogger("requests_oauthlib.oauth2_session").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler(log_file, mode='w')
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
 ## Functions
