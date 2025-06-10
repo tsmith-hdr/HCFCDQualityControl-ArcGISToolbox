@@ -14,6 +14,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from src.constants.paths import SHP_DIR
 from src.constants.values import PROJECT_SPATIAL_REFERENCE
 
+ar_log = logging.getLogger("src.tools.datamanagement.TOOL_AppendixReport")
+bs_log = logging.getLogger("src.tools.backupmanagement.TOOL_BackupServices")
+
+
 class ServiceLayer():
     def __init__(self, gis_conn, layer_obj, portal_obj):
         self.gis_conn = gis_conn
@@ -49,7 +53,7 @@ class ServiceLayer():
 
     @property
     def excelSheetName(self):
-        formatted = self.layerName.translate({ord(c): "" for c in "_ "})
+        formatted = self.layerName.translate({ord(c): "" for c in "_ ,()|/\\"})
         excelSheetName=formatted[0:31]
         return excelSheetName
     
@@ -124,6 +128,7 @@ class ServiceLayer():
             pass
 
         else:
+            bs_log.info("Creating New Shapefile...")
             if not os.path.exists(os.path.dirname(self.projectBoundaryPath)):
                 os.makedirs(os.path.dirname(self.projectBoundaryPath))
             arcpy.management.Project(base_shp, self.projectBoundaryPath, arcpy.SpatialReference(self.layerSpatialReferenceWkid))
@@ -137,7 +142,8 @@ class ServiceLayer():
         metadata_dict = {}
         feature_names = [f for dataset in arcpy.ListDatasets(feature_type="Feature") for f in arcpy.ListFeatureClasses(feature_dataset=dataset)]
         formatted_layer_name = self.layerName.translate({ord(c): "_" for c in "!@#$%^&*()[] {};:,./<>?\|`~-=_+"})
-
+        ## Need to add logic to replace leading digits
+        
         count = 1
         while True:
             if formatted_layer_name not in feature_names:
@@ -149,16 +155,18 @@ class ServiceLayer():
                     formatted_layer_name = f"{formatted_layer_name.rsplit('_',1)[0]}_{count}"
 
                 count+=1
-
+        bs_log.info(f"Formatted Name: {formatted_layer_name}")
+        bs_log.info(f"Layer Spatial Reference: {self.layerSpatialReferenceWkid}")
         self._handleProjectBoundaryShp()
 
         try:
+            bs_log.info("Exporting...")
             featureclass_path = os.path.join(out_workspace, formatted_layer_name)
             with arcpy.EnvManager(outputCoordinateSystem=PROJECT_SPATIAL_REFERENCE, preserveGlobalIds=True, extent=self.projectBoundaryPath):
                 arcpy.conversion.ExportFeatures(in_features=self.layerUrl,
                                                 out_features=featureclass_path)
         except Exception as f:
-            #logger.error(f"{self.layerName:30s} {self.parentId:30s}")
+            bs_log.error(f"{self.layerName:30s} {self.parentId:30s}")
             arcpy.AddWarning(f"Layer Failed to Export:\n{self.layerName:30s} {self.parentId:30s}")
 
         metadata_dict["Feature Class Name"]=formatted_layer_name

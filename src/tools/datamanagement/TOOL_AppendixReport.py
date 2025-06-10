@@ -11,17 +11,21 @@ from arcgis.gis import GIS, ItemTypeEnum
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-
+from src.functions import utility
 from src.constants.paths import LOG_DIR
-#############################################################################################################################
-## Environments
 #############################################################################################################################
 ## Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 #############################################################################################################################
+## Email Parameters
+send_from = "edward.smith@hdrinc.com"
+send_to = ["edward.smith@hdrinc.com"]
+subject = f"Appendix H Report {DATETIME_STR.split('-')[0]}"
+
+#############################################################################################################################
 ## Logging
 reload(logging)
-log_file =os.path.join(LOG_DIR, "AppendiciesReport",f"AppendiciesReport_{DATETIME_STR}.log")
+log_file =os.path.join(LOG_DIR, "AppendixReports",f"AppendixH_{DATETIME_STR}.log")
 
 logging.getLogger().disabled = True
 logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
@@ -54,10 +58,10 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
     for folder_obj in agol_folders:
         if include_exclude_flag.strip().lower()  == "include":
             logger.debug("Hit Include")
-            [item_list.append(item) for item in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)if item.name in include_exclude_list]
+            [item_list.append(item) for item in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)if item.title in include_exclude_list]
         elif include_exclude_flag.strip().lower() == "exclude":
             logger.debug("Hit Exclude")
-            [item_list.append(item) for item in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value) if item.name not in include_exclude_list]
+            [item_list.append(item) for item in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value) if item.title not in include_exclude_list]
         elif include_exclude_flag.strip().lower()  == "all":
             logger.debug("Hit All")
             [item_list.append(item) for item in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
@@ -75,7 +79,7 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
             logger.info(f"Layer: {layer}")
             sl = ServiceLayer(gis_conn, layer, item)
             logger.debug(f"Service Layer Object: {sl}")
-            
+
             property_dict = sl.propertyDictionary()
 
             if include_records == "Include Records":
@@ -96,6 +100,20 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
         if include_records == "Include Records":
             for j in RECORD_LIST:
                 j["df"].to_excel(writer, sheet_name=j["sheet_name"], index=False)
+
+
+
+    email_text = """
+    Attached is a copy of the report.
+    Appendix H Report run on {}. 
+    -- Input Services --
+    {}
+
+    Output Excel Path: {}
+    Local User: {}
+    GIS User: {}
+    """.format(DATETIME_STR, "\n".join([i.title for i in item_list]), output_excel, os.getlogin(), gis_conn.users.me.username)
+    utility.sendEmail(sendTo=send_to, sendFrom=send_from, subject=subject, message_text=email_text, text_type="plain", attachments=[output_excel])
         
         
     ## Trys to open the excel report. Logs warning if unable to open.

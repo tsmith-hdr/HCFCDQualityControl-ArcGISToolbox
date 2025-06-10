@@ -36,8 +36,10 @@ outputs/CompareStorageLocations/*
 outputs/GetFeatureClassDates/*
 outputs/UpdateMetadata/*
 outputs/UpdateServiceMetadataBatch/*
-outputs/AppendiciesReports/*
-outputs/BackupServices/*
+outputs/AppendixReports/*
+outputs/BackupServices/gdb/*
+outputs/BackupServices/report/*
+outputs/BackupServices/zip/*
 
 !outputs/CompareMetadata/.gitkeep
 !outputs/CompareSpatialReferences/.gitkeep
@@ -45,8 +47,10 @@ outputs/BackupServices/*
 !outputs/GetFeatureClassDates/.gitkeep
 !outputs/UpdateMetadata/.gitkeep
 !outputs/UpdateServiceMetadataBatch/.gitkeep
-!outputs/BackupServices/.gitkeep
-!outputs/AppendiciesReports/.gitkeep
+!outputs/BackupServices/gdb/.gitkeep
+!outputs/BackupServices/report/.gitkeep
+!outputs/BackupServices/zip/.gitkeep
+!outputs/AppendixReports/.gitkeep
 !outputs/.gitkeep
 
 
@@ -58,7 +62,7 @@ logs/GetFeatureClassDates/*
 logs/UpdateMetadata/*
 logs/BackupServices/*
 logs/UpdateServiceMetadataBatch/*
-logs/AppendiciesReport/*
+logs/AppendixReports/*
 
 !logs/CompareMetadata/.gitkeep
 !logs/CompareSpatialReferences/.gitkeep
@@ -67,6 +71,7 @@ logs/AppendiciesReport/*
 !logs/UpdateMetadata/.gitkeep
 !logs/BackupServices/.gitkeep
 !logs/UpdateServiceMetadataBatch/.gitkeep
+!logs/AppendixReports/.gitkeep
 !logs/.gitkeep
 
 
@@ -75,3 +80,6 @@ logs/AppendiciesReport/*
 standalone/SCRIPT_*
 
 !.standalone_.zip
+
+
+/.ipynb_checkpoints/
