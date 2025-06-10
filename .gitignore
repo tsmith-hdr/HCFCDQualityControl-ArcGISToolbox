@@ -9,13 +9,13 @@ secrets.json
 /__pycache__/
 
 
-## Ignore all XML Files associated with the Python Toolbox
+## Ignore all SHP Files
+src/shp/project_boundaries/*
+!src/shp/project_boundaries/.gitkeep
 
 
 ## Ignore the scratch/working Notebook
 scratch.ipynb
-
-
 
 ## Ignore Testing Outputs
 testing/outputs/*

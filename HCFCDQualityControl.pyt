@@ -7,9 +7,11 @@ import pandas as pd
 from pathlib import Path
 
 import arcpy
-from arcgis.gis import GIS, ItemTypeEnum
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
+from arcgis.gis import GIS, ItemTypeEnum
+print(str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+print(sys.path)
     
 from src.functions import utility
 from src.constants.paths import PORTAL_URL, OUTPUTS_DIR
@@ -1058,7 +1060,7 @@ class BackupServices:
         include_exclude = parameters[2].valueAsText
         include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")]
         email_from = parameters[4].valueAsText
-        email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")]
+        email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")] if parameters[5].valueAsText else None
 
         if __name__ == "__main__":
             from src.tools.backupmanagement import TOOL_BackupServices
