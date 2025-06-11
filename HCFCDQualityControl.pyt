@@ -1079,7 +1079,7 @@ class BackupServices:
         email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")] if parameters[5].valueAsText else None
         agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
         arcpy.AddMessage(__name__)
-        if __name__ == "__main__":
+        if __name__ == "__main__" or __name__ == "pyt":
             from src.tools.backupmanagement import TOOL_BackupServices
 
             TOOL_BackupServices.main(gis_conn=self.gis, 
