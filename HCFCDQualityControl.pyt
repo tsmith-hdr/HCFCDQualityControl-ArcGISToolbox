@@ -1074,7 +1074,7 @@ class BackupServices:
         spatial_reference = arcpy.SpatialReference(text=parameters[1].valueAsText)
         backup_dir = parameters[6].valueAsText
         include_exclude = parameters[2].valueAsText
-        include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")] if parameters[3].valueAsText else None
+        include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")] if parameters[3].valueAsText else []
         email_from = parameters[4].valueAsText if parameters[4].valueAsText else None
         email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")] if parameters[5].valueAsText else None
         agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
@@ -1349,7 +1349,7 @@ class AppendiciesReport:
     def execute(self, parameters, messages):
         """The source code of the tool."""
         include_exclude_flag = parameters[1].valueAsText
-        include_exclude_list = [i.replace("'","") for i in parameters[2].valueAsText.split(";")] if parameters[2].valueAsText else None
+        include_exclude_list = [i.replace("'","") for i in parameters[2].valueAsText.split(";")] if parameters[2].valueAsText else []
         output_excel = parameters[3].valueAsText
         agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
         include_records = parameters[4].valueAsText
