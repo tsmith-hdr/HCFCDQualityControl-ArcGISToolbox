@@ -83,10 +83,10 @@ def authenticateAgolConnection(portal_url):
 
 def sendEmail(sendTo:list, sendFrom:str, subject:str, message_text:str, text_type:str, attachments:list)->str:
     returnMsgs = ''
-    if type(sendTo) == list:
-        send_to = ", ".join(sendTo)
-    else:
-        send_to = sendTo
+    # if type(sendTo) == list:
+    #     send_to = ", ".join(sendTo)
+    # else:
+    #     send_to = sendTo
     try:
         msg = MIMEMultipart()
         msg['Subject'] = subject
@@ -101,10 +101,10 @@ def sendEmail(sendTo:list, sendFrom:str, subject:str, message_text:str, text_typ
             file['Content-Disposition'] = f'attachment; filename="{os.path.basename(attachment)}"' 
             msg.attach(file)
         smtp = smtplib.SMTP('smtp.hdrinc.com')
-        smtp.sendmail(sendFrom, send_to, msg.as_string())
+        smtp.sendmail(sendFrom, sendTo, msg.as_string())
         smtp.close()
 
-        returnMsgs = '-- Message Sent To --\n' + "\n".join(send_to.split(","))
+        returnMsgs = '-- Message Sent To --\n' + "\n".join(sendTo)
 
     except Exception as e:
         returnMsgs = str(e)
