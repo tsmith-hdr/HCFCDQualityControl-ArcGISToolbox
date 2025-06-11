@@ -1260,7 +1260,7 @@ class AppendiciesReport:
             direction="Output")
         
         output_excel.filter.list = ["xlsx"]
-        output_excel.value = os.path.join(OUTPUTS_DIR, "AppendiciesReports", f"AppendiciesReport_{self.datetime_str}.xlsx")
+        output_excel.value = os.path.join(OUTPUTS_DIR, "AppendixReports", f"AppendixReport_{self.datetime_str}.xlsx")
 
         include_records = arcpy.Parameter(
             displayName="Include Records",
