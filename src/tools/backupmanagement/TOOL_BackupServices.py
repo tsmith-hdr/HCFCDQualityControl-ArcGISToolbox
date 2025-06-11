@@ -125,6 +125,7 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
     logger.info(f"AGOL Item Count: {len(item_obj_list)}")
     ## Iterates over the Item Obj and creates a Service Layer Object for each of the layers in the service. 
     # This Class is stored in src/classes/servicelayer.py
+    arcpy.AddMessage(f"Exporting Services...")
     for item_obj in item_obj_list:
         logger.info(f"AGOL Item: {item_obj}")
         logger.info(f"Layer Count: {len(item_obj.layers)}")
@@ -159,6 +160,7 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
 
     ## Here we are compressing the file gdb this is a lossl_objess function. We want to add this process to make sure that the archived records are unable to be editied.
     logger.info(f"Compressing Local GDB Items...")
+    arcpy.AddMessage(f"Compressing Local GDB Items...")
     with arcpy.EnvManager(workspace=local_gdb_path):
         arcpy.management.CompressFileGeodatabaseData(local_gdb_path, lossless=True)
         uncompressed = [failed.append({"Layer":f, "Action": "GDB Compression", "Error":"Failed to Compress"}) for dataset in arcpy.ListDatasets(feature_type="Feature") for f in arcpy.ListFeatureClasses(feature_dataset=dataset) if not arcpy.Describe(f).isCompressed]
@@ -215,6 +217,7 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
 
     ## Here we are compress together the excel report and the local filegdb. zipping these items will make it more efficient to send from local machine to the backup directory. 
     logger.info(f"Zipping Local GDB and Excel Reports...")
+    arcpy.AddMessage(f"Zipping Local GDB and Excel Reports...")
     try:
         zipped = os.path.join(ZIP_DIR, f"BackupServices_{DATETIME_STR}.zip")
         with ZipFile(zipped, 'w') as zip:
