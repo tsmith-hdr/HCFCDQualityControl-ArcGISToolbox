@@ -19,7 +19,8 @@ secrets.json
 !src/shp/project_boundaries/.gitkeep
 src/shp/project_boundaries/*
 
-
+## Ignore all .xml files 
+.xml
 
 
 ## Ignore the scratch/working Notebook
