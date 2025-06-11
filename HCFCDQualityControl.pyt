@@ -1289,7 +1289,7 @@ class AppendiciesReport:
         include_exclude = parameters[1]
         include_exclude_list = parameters[2]
 
-        if agol_folders.altered and not agol_folders.hasBeenValidated:
+        if agol_folders.altered:
             if include_exclude.valueAsText in ["Include", "Exclude"] and agol_folders.valueAsText:
                 include_exclude_list.enabled = True
                 agol_folder_objs = [self.gis.content.folders.get(f.replace("'", "")) for f in agol_folders.valueAsText.split(";")]
