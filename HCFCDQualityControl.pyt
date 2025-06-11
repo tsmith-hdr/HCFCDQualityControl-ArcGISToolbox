@@ -1316,9 +1316,9 @@ class AppendiciesReport:
         include_records = parameters[4].valueAsText
 
         if __name__ == "__main__":
-            from src.tools.datamanagement import TOOL_AppendiciesReport
+            from src.tools.datamanagement import TOOL_AppendixReport
 
-            TOOL_AppendiciesReport.main(gis_conn=self.gis, 
+            TOOL_AppendixReport.main(gis_conn=self.gis, 
                                         agol_folders=agol_folders,
                                         include_exclude_flag=include_exclude_flag, 
                                         output_excel=output_excel,
