@@ -934,12 +934,12 @@ class BackupServices:
 
     def getParameterInfo(self):
         """Define the tool parameters."""
-        gdb_directory = arcpy.Parameter(
-            displayName="File GDB Folder",
-            name="gdb_directory",
-            datatype="DEFolder",
-            parameterType="Required",
-            direction="Input")
+        # gdb_directory = arcpy.Parameter(
+        #     displayName="File GDB Folder",
+        #     name="gdb_directory",
+        #     datatype="DEFolder",
+        #     parameterType="Required",
+        #     direction="Input")
         
         spatial_reference = arcpy.Parameter(
             displayName="Spatial Reference",
@@ -967,6 +967,7 @@ class BackupServices:
             direction="Input",
             category="Folder Filter")
         
+        include_exclude.value = "All"
         include_exclude.filter.type = "ValueList"
         include_exclude.filter.list = ["Include", "Exclude", "All"]
 
@@ -979,6 +980,7 @@ class BackupServices:
             enabled=False,
             multiValue=True,
             category="Folder Filter")
+        
         include_exclude_list.filter.type="ValueList"
 
 
@@ -1008,18 +1010,18 @@ class BackupServices:
             direction="Input")
         
 
-        excel_report = arcpy.Parameter(
-            displayName="Excel Report",
-            name="excel_report",
-            datatype="DEFile",
-            parameterType="Required",
-            direction="Output")
+        # excel_report = arcpy.Parameter(
+        #     displayName="Excel Report",
+        #     name="excel_report",
+        #     datatype="DEFile",
+        #     parameterType="Required",
+        #     direction="Output")
         
-        excel_report.filter.list = ["xlsx"]
-        excel_report.value = os.path.join(OUTPUTS_DIR, "BackupServices", f"BackupServices_{self.datetime_str}.xlsx")
+        # excel_report.filter.list = ["xlsx"]
+        # excel_report.value = os.path.join(OUTPUTS_DIR, "BackupServices", f"BackupServices_{self.datetime_str}.xlsx")
 
 
-        params = [gdb_directory, spatial_reference,include_exclude, include_exclude_list,email_from, email_to, backup_dir, excel_report]
+        params = [agol_folders,spatial_reference,include_exclude, include_exclude_list,email_from, email_to, backup_dir]
         return params
 
     def isLicensed(self):
@@ -1030,50 +1032,63 @@ class BackupServices:
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
+        agol_folders = parameters[0]
+        include_exclude = parameters[2]
+        include_exclude_list = parameters[3]
 
+        if agol_folders.altered and not agol_folders.hasBeenValidated:
+            if agol_folders.valueAsText:
+                agol_folder_objs = [self.gis.content.folders.get(f.replace("'", "")) for f in agol_folders.valueAsText.split(";")]
+                include_exclude_list.filter.list = [i.title for folder_obj in agol_folder_objs for i in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
+        
+        if include_exclude.altered and not include_exclude.hasBeenValidated:
+            if include_exclude.valueAsText in ["Include", "Exclude"] and agol_folders.valueAsText:
+                include_exclude_list.enabled = True
+
+            else:
+                include_exclude_list.value = None
+                include_exclude_list.enabled = False
+
+        
         return
 
     def updateMessages(self, parameters):
         """Modify the messages created by internal validation for each tool
         parameter. This method is called after internal validation."""
-        include_exclude = parameters[2]
-        include_exclude_list = parameters[3]
         email_from = parameters[4]
         email_to = parameters[5]
 
-        if include_exclude.altered and not include_exclude.hasBeenValidated:
-            if include_exclude.valueAsText in ["Include", "Exclude"]:
-                include_exclude_list.enabled = True
-                include_exclude_list.filter.list = [i.name for i in self.gis.content.folders.list()]
-        elif not include_exclude.altered:
-            include_exclude_list.values = None
-            include_exclude_list.enabled = False
-                
-
-
+        if email_from.altered and not email_from.hasBeenValidated:
+            if not email_from.valueAsText.lower().endswith("@hdrinc.com"):
+                email_from.setErrorMessage("Senders email needs to be from an HDR inc. Email")
+        
+        if email_to.altered and not email_to.hasBeenValidated:
+            if email_to.valueAsText:
+                email_list = email_to.valueAsText.split(";")
+                for email in email_list:
+                    if not email.lower().endswith("@hdrinc.com"):
+                        email_to.setErrorMessage(f"All Emails need to be an HDR inc. email.\n{email}")
 
         return
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        gdb_dir = parameters[0].valueAsText
         spatial_reference = arcpy.SpatialReference(text=parameters[1].valueAsText)
-        excel_report = parameters[7].valueAsText
         backup_dir = parameters[6].valueAsText
         include_exclude = parameters[2].valueAsText
         include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")]
         email_from = parameters[4].valueAsText
         email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")] if parameters[5].valueAsText else None
-
+        agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
+        arcpy.AddMessage(__name__)
         if __name__ == "__main__":
             from src.tools.backupmanagement import TOOL_BackupServices
 
             TOOL_BackupServices.main(gis_conn=self.gis, 
-                                     gdb_directory=gdb_dir,
                                      spatial_reference=spatial_reference,
-                                     excel_report=excel_report,
+                                     agol_folder_objs=agol_folders,
                                      backup_dir=backup_dir,
-                                     include_exclude=include_exclude,
+                                     include_exclude_flag=include_exclude,
                                      include_exclude_list=include_exclude_list,
                                      email_from=email_from,
                                      email_to=email_to)
