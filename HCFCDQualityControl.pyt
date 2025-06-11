@@ -964,8 +964,7 @@ class BackupServices:
             name="include_exclude",
             datatype="GPString",
             parameterType="Optional",
-            direction="Input",
-            category="Folder Filter")
+            direction="Input")
         
         include_exclude.value = "All"
         include_exclude.filter.type = "ValueList"
@@ -978,8 +977,7 @@ class BackupServices:
             parameterType="optional",
             direction="Input",
             enabled=False,
-            multiValue=True,
-            category="Folder Filter")
+            multiValue=True)
         
         include_exclude_list.filter.type="ValueList"
 
