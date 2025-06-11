@@ -1055,6 +1055,9 @@ class BackupServices:
         parameter. This method is called after internal validation."""
         email_from = parameters[4]
         email_to = parameters[5]
+        include_exclude = parameters[2]
+        agol_folders = parameters[0]
+        include_exclude_list = parameters[3]
 
         if email_from.altered and not email_from.hasBeenValidated:
             if not email_from.valueAsText.lower().endswith("@hdrinc.com"):
@@ -1066,6 +1069,10 @@ class BackupServices:
                 for email in email_list:
                     if not email.lower().endswith("@hdrinc.com"):
                         email_to.setErrorMessage(f"All Emails need to be an HDR inc. email.\n{email}")
+
+
+        if include_exclude.valueAsText in ["Include", "Exclude"] and agol_folders.valueAsText and not include_exclude_list.valueAsText:
+            include_exclude_list.setErrorMessage("At Least One Service Needs to be Selected.")
 
         return
 
