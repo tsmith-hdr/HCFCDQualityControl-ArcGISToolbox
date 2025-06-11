@@ -1210,7 +1210,7 @@ class UpdateServicesMeta:
 class AppendiciesReport:
     def __init__(self):
         """Define the tool (tool name is the name of the class)."""
-        self.label = "Appendicies Report (Excel Report)"
+        self.label = "Appendix Report (Excel Report)"
         self.description = ""
         self.category = "Data Management Reports"
         self.gis = GIS("Pro")
