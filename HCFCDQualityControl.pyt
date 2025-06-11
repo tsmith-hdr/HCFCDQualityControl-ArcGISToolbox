@@ -1074,8 +1074,8 @@ class BackupServices:
         spatial_reference = arcpy.SpatialReference(text=parameters[1].valueAsText)
         backup_dir = parameters[6].valueAsText
         include_exclude = parameters[2].valueAsText
-        include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")]
-        email_from = parameters[4].valueAsText
+        include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")] if parameters[3].valueAsText else None
+        email_from = parameters[4].valueAsText if parameters[4].valueAsText else None
         email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")] if parameters[5].valueAsText else None
         agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
         arcpy.AddMessage(__name__)
