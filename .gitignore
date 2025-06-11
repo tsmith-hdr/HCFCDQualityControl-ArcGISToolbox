@@ -20,7 +20,7 @@ secrets.json
 src/shp/project_boundaries/*
 
 ## Ignore all .xml files 
-.xml
+*.xml
 
 
 ## Ignore the scratch/working Notebook

@@ -1298,16 +1298,20 @@ class AppendiciesReport:
         include_exclude = parameters[1]
         include_exclude_list = parameters[2]
 
-        if agol_folders.altered:
-            if include_exclude.valueAsText in ["Include", "Exclude"] and agol_folders.valueAsText:
-                include_exclude_list.enabled = True
+        if agol_folders.altered and not agol_folders.hasBeenValidated:
+            if agol_folders.valueAsText:
                 agol_folder_objs = [self.gis.content.folders.get(f.replace("'", "")) for f in agol_folders.valueAsText.split(";")]
                 include_exclude_list.filter.list = [i.title for folder_obj in agol_folder_objs for i in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
+        
+        if include_exclude.altered and not include_exclude.hasBeenValidated:
+            if include_exclude.valueAsText in ["Include", "Exclude"] and agol_folders.valueAsText:
+                include_exclude_list.enabled = True
+
             else:
                 include_exclude_list.value = None
                 include_exclude_list.enabled = False
 
-            
+        
         return
 
     def updateMessages(self, parameters):
@@ -1336,12 +1340,11 @@ class AppendiciesReport:
         output_excel = parameters[3].valueAsText
         agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
         include_records = parameters[4].valueAsText
-        email_from = parameters[5].valueAsText
-        email_to = parameters[6].valueAsText
+        email_from = parameters[5].valueAsText if parameters[5].valueAsText else None
+        email_to = [e.replace("'", "") for e in parameters[6].valueAsText] if parameters[6].valueAsText else None
         arcpy.AddMessage(__name__)
-        if __name__ == "pyt":
+        if __name__ == "__main__":
             from src.tools.datamanagement import TOOL_AppendixReport
-            [arcpy.AddMessage(p.valueAsText) for p in parameters]
             TOOL_AppendixReport.main(gis_conn=self.gis, 
                                         agol_folders=agol_folders,
                                         include_exclude_flag=include_exclude_flag, 
