@@ -19,7 +19,7 @@ DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 #############################################################################################################################
 ## Email Parameters
 send_from = "edward.smith@hdrinc.com"
-send_to = ["edward.smith@hdrinc.com"]
+send_to = ["edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "shama.sheth@hdrinc.com","stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
 subject = f"Appendix H Report {DATETIME_STR.split('-')[0]}"
 
 #############################################################################################################################
