@@ -1050,16 +1050,7 @@ class BackupServices:
             include_exclude_list.enabled = False
                 
 
-        if email_from.altered and not email_from.hasBeenValidated:
-            if not email_from.valueAsText.lower().endswith("@hdrinc.com"):
-                email_from.setErrorMessage("Senders email needs to be from an HDR inc. Email")
-        
-        if email_to.altered and not email_to.hasBeenValidated:
-            if email_to.valueAsText:
-                email_list = email_to.valueAsText.split(";")
-                for email in email_list:
-                    if not email.lower().endswith("@hdrinc.com"):
-                        email_to.setErrorMessage(f"All Emails need to be an HDR inc. email.\n{email}")
+
 
         return
 
@@ -1273,8 +1264,26 @@ class AppendiciesReport:
         include_records.filter.type = "ValueList"
         include_records.filter.list = ["Overview Only", "Include Records"]        
 
+        email_from = arcpy.Parameter(
+            displayName="Email From",
+            name="email_from",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            category="Email")
+        
 
-        params = [agol_folders,include_exclude,include_exclude_list, output_excel, include_records]
+        email_to = arcpy.Parameter(
+            displayName="Email To",
+            name="email_to",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            multiValue=True,
+            category="Email")
+
+
+        params = [agol_folders,include_exclude,include_exclude_list, output_excel, include_records, email_from, email_to]
         return params
 
     def isLicensed(self):
@@ -1304,6 +1313,19 @@ class AppendiciesReport:
     def updateMessages(self, parameters):
         """Modify the messages created by internal validation for each tool
         parameter. This method is called after internal validation."""
+        email_from = parameters[5]
+        email_to = parameters[6]
+
+        if email_from.altered and not email_from.hasBeenValidated:
+            if not email_from.valueAsText.lower().endswith("@hdrinc.com"):
+                email_from.setErrorMessage("Senders email needs to be from an HDR inc. Email")
+        
+        if email_to.altered and not email_to.hasBeenValidated:
+            if email_to.valueAsText:
+                email_list = email_to.valueAsText.split(";")
+                for email in email_list:
+                    if not email.lower().endswith("@hdrinc.com"):
+                        email_to.setErrorMessage(f"All Emails need to be an HDR inc. email.\n{email}")
 
         return
 

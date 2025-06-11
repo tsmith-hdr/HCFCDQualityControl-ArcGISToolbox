@@ -18,9 +18,7 @@ from src.constants.paths import LOG_DIR
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 #############################################################################################################################
 ## Email Parameters
-send_from = "edward.smith@hdrinc.com"
-send_to = ["edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "shama.sheth@hdrinc.com","stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
-subject = f"Appendix H Report {DATETIME_STR.split('-')[0]}"
+subject = f"Appendix Report {DATETIME_STR.split('-')[0]}"
 
 #############################################################################################################################
 ## Logging
@@ -42,7 +40,7 @@ logger.debug(logger)
 
 from src.classes.servicelayer import ServiceLayer
 #############################################################################################################################
-def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel:str, include_records:str,include_exclude_list:list=None)->None:
+def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel:str, include_records:str,include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
     PROPERTY_LIST = []
     RECORD_LIST = []
     #############################################################################################################################
@@ -109,20 +107,20 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
             for j in RECORD_LIST:
                 j["df"].to_excel(writer, sheet_name=j["sheet_name"], index=False)
 
+    if email_from:
+        logger.info(f"Sending Email...")
+        email_text = """
+        Attached is a copy of the report.
+        Appendix H Report run on {}. 
+        -- Input Services --
+        {}
 
-    logger.info(f"Sending Email...")
-    email_text = """
-    Attached is a copy of the report.
-    Appendix H Report run on {}. 
-    -- Input Services --
-    {}
-
-    Output Excel Path: {}
-    Local User: {}
-    GIS User: {}
-    """.format(DATETIME_STR, "\n".join([i.title for i in item_list]), output_excel, os.getlogin(), gis_conn.users.me.username)
-    result = utility.sendEmail(sendTo=send_to, sendFrom=send_from, subject=subject, message_text=email_text, text_type="plain", attachments=[output_excel])
-    logger.info(result)
+        Output Excel Path: {}
+        Local User: {}
+        GIS User: {}
+        """.format(DATETIME_STR, "\n".join([i.title for i in item_list]), output_excel, os.getlogin(), gis_conn.users.me.username)
+        result = utility.sendEmail(sendTo=email_to, sendFrom=email_from, subject=subject, message_text=email_text, text_type="plain", attachments=[output_excel])
+        logger.info(result)
         
     ## Trys to open the excel report. Logs warning if unable to open.
     arcpy.AddMessage(f"Opening Excel Report...")
