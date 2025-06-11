@@ -104,7 +104,7 @@ def sendEmail(sendTo:list, sendFrom:str, subject:str, message_text:str, text_typ
         smtp.sendmail(sendFrom, sendTo, msg.as_string())
         smtp.close()
 
-        returnMsgs = '-- Message Sent To --\n' + "\n".join(sendTo)
+        returnMsgs = f'-- Message Sent To --\n{sendTo}'
 
     except Exception as e:
         returnMsgs = str(e)
