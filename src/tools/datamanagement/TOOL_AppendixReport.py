@@ -37,7 +37,7 @@ file_handler = logging.FileHandler(log_file, mode='w')
 formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.debug(logger)
 
 from src.classes.servicelayer import ServiceLayer
@@ -83,18 +83,26 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
             property_dict = sl.propertyDictionary()
 
             if include_records == "Include Records":
+                logger.info(f"Adding Hyperlink to Property Dictionary...")
                 new_dict = {"Sheet Hyperlink":sl.excelHyperlink}
                 for k,v in property_dict.items():
                     new_dict[k]=v
                 property_dict = new_dict
+                logger.info(f"Creating Record DataFrame...")
                 record_df = sl.recordDf()
+                logger.debug(record_df.head())
+                logger.info(f"Appending Record DF to RECORD_LIST...")
                 RECORD_LIST.append({"sheet_name":sl.excelSheetName, "df":record_df})
-                
+            logger.info("Appending property_dict to PROPERTY_LIST...")
             PROPERTY_LIST.append(property_dict)
+
+    logger.info(f"PROPERTY_LIST Count: {len(PROPERTY_LIST)}")
+    logger.info(f"RECORD_LIST Count: {len(RECORD_LIST)}")
 
     arcpy.AddMessage(f"Exporting Excel Report...")
     logger.info(f"Exporting Excel Report...")
     df_properties = pd.DataFrame(PROPERTY_LIST)
+    logger.debug(df_properties.head())
     with pd.ExcelWriter(output_excel) as writer:
         df_properties.to_excel(writer, sheet_name="PropertiesOverview", index=False)
         if include_records == "Include Records":
@@ -102,7 +110,7 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
                 j["df"].to_excel(writer, sheet_name=j["sheet_name"], index=False)
 
 
-
+    logger.info(f"Sending Email...")
     email_text = """
     Attached is a copy of the report.
     Appendix H Report run on {}. 
@@ -113,8 +121,8 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
     Local User: {}
     GIS User: {}
     """.format(DATETIME_STR, "\n".join([i.title for i in item_list]), output_excel, os.getlogin(), gis_conn.users.me.username)
-    utility.sendEmail(sendTo=send_to, sendFrom=send_from, subject=subject, message_text=email_text, text_type="plain", attachments=[output_excel])
-        
+    result = utility.sendEmail(sendTo=send_to, sendFrom=send_from, subject=subject, message_text=email_text, text_type="plain", attachments=[output_excel])
+    logger.info(result)
         
     ## Trys to open the excel report. Logs warning if unable to open.
     arcpy.AddMessage(f"Opening Excel Report...")
@@ -123,7 +131,7 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
         os.startfile(output_excel)
     except Exception as t:
         arcpy.AddWarning(f"Failed to Launch Excel")
-        logger.warning
+        logger.warning(f"Failed to Launch Excel")
 
     return 
 

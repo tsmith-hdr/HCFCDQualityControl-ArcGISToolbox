@@ -10,8 +10,16 @@ secrets.json
 
 
 ## Ignore all SHP Files
-src/shp/project_boundaries/*
+!/src/shp/project_boundaries/6588/projectboundary.shp
+!/src/shp/project_boundaries/6588/projectboundary.shx
+!src/shp/project_boundaries/6588/projectboundary.dbf
+!src/shp/project_boundaries/6588/projectboundary.sbx
+!src/shp/project_boundaries/6588/projectboundary.sbn
+!src/shp/project_boundaries/6588/projectboundary.prj
 !src/shp/project_boundaries/.gitkeep
+src/shp/project_boundaries/*
+
+
 
 
 ## Ignore the scratch/working Notebook

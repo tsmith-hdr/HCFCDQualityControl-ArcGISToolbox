@@ -48,7 +48,7 @@ class ServiceLayer():
         self.layerCredits = self.layerProperties["copyrightText"]
         self.layerSpatialReferenceWkid = self.layerProperties["spatialReference"]["latestWkid"] if hasattr(self.layerProperties, "spatialReference") else self.layerProperties["sourceSpatialReference"]["latestWkid"]
         self.projectBoundaryPath = os.path.join(SHP_DIR, "project_boundaries",str(self.layerSpatialReferenceWkid), "projectboundary.shp") if self.isHosted else os.path.join(SHP_DIR, "project_boundaries",str(self.layerSpatialReferenceWkid), "projectboundary.shp")
-
+        print(self.projectBoundaryPath)
 
 
     @property
