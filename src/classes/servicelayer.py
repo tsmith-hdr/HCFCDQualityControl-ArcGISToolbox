@@ -48,7 +48,6 @@ class ServiceLayer():
         self.layerCredits = self.layerProperties["copyrightText"]
         self.layerSpatialReferenceWkid = self.layerProperties["spatialReference"]["latestWkid"] if hasattr(self.layerProperties, "spatialReference") else self.layerProperties["sourceSpatialReference"]["latestWkid"]
         self.projectBoundaryPath = os.path.join(SHP_DIR, "project_boundaries",str(self.layerSpatialReferenceWkid), "projectboundary.shp") if self.isHosted else os.path.join(SHP_DIR, "project_boundaries",str(self.layerSpatialReferenceWkid), "projectboundary.shp")
-        print(self.projectBoundaryPath)
 
 
     @property
@@ -100,6 +99,7 @@ class ServiceLayer():
         return out_dict
 
     def recordDf(self)->pd.DataFrame:
+        self._handleProjectBoundaryShp()
         shp_geom = [i[0] for i in arcpy.da.SearchCursor(self.projectBoundaryPath, ["SHAPE@"])][0]
         spatial_rel = "ENVELOPE_INTERSECTS"
         fields = [field["name"] for field in self.layerFields]
