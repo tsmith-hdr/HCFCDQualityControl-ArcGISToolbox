@@ -1343,7 +1343,8 @@ class AppendiciesReport:
         email_from = parameters[5].valueAsText if parameters[5].valueAsText else None
         email_to = [e.replace("'", "") for e in parameters[6].valueAsText] if parameters[6].valueAsText else None
         arcpy.AddMessage(__name__)
-        if __name__ == "__main__":
+        
+        if __name__ == "__main__" or __name__ == "pyt":
             from src.tools.datamanagement import TOOL_AppendixReport
             TOOL_AppendixReport.main(gis_conn=self.gis, 
                                         agol_folders=agol_folders,
