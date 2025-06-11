@@ -1336,16 +1336,20 @@ class AppendiciesReport:
         output_excel = parameters[3].valueAsText
         agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
         include_records = parameters[4].valueAsText
-
-        if __name__ == "__main__":
+        email_from = parameters[5].valueAsText
+        email_to = parameters[6].valueAsText
+        arcpy.AddMessage(__name__)
+        if __name__ == "pyt":
             from src.tools.datamanagement import TOOL_AppendixReport
-
+            [arcpy.AddMessage(p.valueAsText) for p in parameters]
             TOOL_AppendixReport.main(gis_conn=self.gis, 
                                         agol_folders=agol_folders,
                                         include_exclude_flag=include_exclude_flag, 
                                         output_excel=output_excel,
                                         include_records=include_records,
-                                        include_exclude_list=include_exclude_list
+                                        include_exclude_list=include_exclude_list,
+                                        email_from=email_from,
+                                        email_to=email_to
                                         )
         return
 
