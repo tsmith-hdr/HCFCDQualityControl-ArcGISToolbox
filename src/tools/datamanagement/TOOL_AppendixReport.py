@@ -12,6 +12,7 @@ from arcgis.gis import GIS, ItemTypeEnum
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.functions import utility
+from src.classes.servicelayer import ServiceLayer
 from src.constants.paths import LOG_DIR
 #############################################################################################################################
 ## Globals
@@ -37,10 +38,8 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 logger.debug(logger)
-
-from src.classes.servicelayer import ServiceLayer
 #############################################################################################################################
-def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel:str, include_records:str,include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
+def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel:str, include_records:str,scheduled:str,include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
     PROPERTY_LIST = []
     RECORD_LIST = []
     #############################################################################################################################
@@ -123,13 +122,14 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
         logger.info(result)
         
     ## Trys to open the excel report. Logs warning if unable to open.
-    arcpy.AddMessage(f"Opening Excel Report...")
-    logger.info(f"Opening Excel Report...")
-    try:
-        os.startfile(output_excel)
-    except Exception as t:
-        arcpy.AddWarning(f"Failed to Launch Excel")
-        logger.warning(f"Failed to Launch Excel")
+    if not scheduled:
+        arcpy.AddMessage(f"Opening Excel Report...")
+        logger.info(f"Opening Excel Report...")
+        try:
+            os.startfile(output_excel)
+        except Exception as t:
+            arcpy.AddWarning(f"Failed to Launch Excel")
+            logger.warning(f"Failed to Launch Excel")
 
     return 
 

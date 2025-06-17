@@ -10,18 +10,19 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
 from src.functions import utility
 from src.tools.backupmanagement import TOOL_BackupServices
-from src.constants.paths import  PORTAL_URL
+from src.constants.paths import  PORTAL_URL, INTRANET_BACKUP_DIR
 #######################################################################################################################
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 #######################################################################################################################
 ## Input Parameters 
 spatial_reference = arcpy.SpatialReference(6588) 
-backup_dir = r"\\Houcmi-pcs\GISData\City\HCFCD Mapping\SAFER_Study_10367700\7.2_WIP\Data\_Archive\BackupServices" ## Can't have letter drives
+backup_dir = INTRANET_BACKUP_DIR 
 agol_folder_names = ["Measures"]
 include_exclude_list = ["SAFER Mitigation Measures (HDR 2025)"]#, "Data", "Exisitng Infrastructure", "Future Projects", "H&H", "Half Layers (2025-04-29)", "Hazardous, Toxic, Radioactive Waste (HTRW)", "Measures", "Real Estate"]  ## list of the category specific Geodatabase names that should be evaluated. If left blank all fgdbs will be evaluated
 include_exclude = "Include"
 email_from="edward.smith@hdrinc.com"
-email_to=email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"]## Testing
+email_to=["edward.smith@hdrinc.com"]
+#email_to=["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"]## Testing
 #email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
 #######################################################################################################################
 print(__name__)
