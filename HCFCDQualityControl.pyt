@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 print(sys.path)
     
 from src.functions import utility
-from src.constants.paths import PORTAL_URL, OUTPUTS_DIR
+from src.constants.paths import PORTAL_URL, OUTPUTS_DIR, APPENDIX_H_INTRANET_DIR, INTRANET_BACKUP_DIR
 #############################################################################################################################
 ## Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -1007,6 +1007,7 @@ class BackupServices:
             parameterType="Required",
             direction="Input")
         
+        backup_dir.value = INTRANET_BACKUP_DIR
 
         # excel_report = arcpy.Parameter(
         #     displayName="Excel Report",
@@ -1271,7 +1272,7 @@ class AppendiciesReport:
             direction="Output")
         
         output_excel.filter.list = ["xlsx"]
-        output_excel.value = os.path.join(OUTPUTS_DIR, "AppendixReports", f"AppendixReport_{self.datetime_str}.xlsx")
+        output_excel.value = os.path.join(APPENDIX_H_INTRANET_DIR, f"AppendixH_{self.datetime_str}.xlsx")
 
         include_records = arcpy.Parameter(
             displayName="Include Records",
@@ -1362,6 +1363,7 @@ class AppendiciesReport:
         include_records = parameters[4].valueAsText
         email_from = parameters[5].valueAsText if parameters[5].valueAsText else None
         email_to = [e.replace("'", "") for e in parameters[6].valueAsText] if parameters[6].valueAsText else None
+        scheduled = False
         arcpy.AddMessage(__name__)
         
         if __name__ == "__main__" or __name__ == "pyt":
@@ -1371,6 +1373,7 @@ class AppendiciesReport:
                                         include_exclude_flag=include_exclude_flag, 
                                         output_excel=output_excel,
                                         include_records=include_records,
+                                        scheduled=scheduled,
                                         include_exclude_list=include_exclude_list,
                                         email_from=email_from,
                                         email_to=email_to
