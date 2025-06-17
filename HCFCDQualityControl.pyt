@@ -7,12 +7,14 @@ import pandas as pd
 from pathlib import Path
 
 import arcpy
-from arcgis.gis import GIS, ItemTypeEnum
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
+from arcgis.gis import GIS, ItemTypeEnum
+print(str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+print(sys.path)
     
 from src.functions import utility
-from src.constants.paths import PORTAL_URL, OUTPUTS_DIR
+from src.constants.paths import PORTAL_URL, OUTPUTS_DIR, APPENDIX_H_INTRANET_DIR, INTRANET_BACKUP_DIR
 #############################################################################################################################
 ## Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -928,15 +930,16 @@ class BackupServices:
         self.description = ""
         self.category = "Backup Management"
         self.gis = GIS("Pro")
+        self.datetime_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def getParameterInfo(self):
         """Define the tool parameters."""
-        gdb_directory = arcpy.Parameter(
-            displayName="File GDB Folder",
-            name="gdb_directory",
-            datatype="DEFolder",
-            parameterType="Required",
-            direction="Input")
+        # gdb_directory = arcpy.Parameter(
+        #     displayName="File GDB Folder",
+        #     name="gdb_directory",
+        #     datatype="DEFolder",
+        #     parameterType="Required",
+        #     direction="Input")
         
         spatial_reference = arcpy.Parameter(
             displayName="Spatial Reference",
@@ -945,26 +948,37 @@ class BackupServices:
             parameterType="Required",
             direction="Input")
         
+        agol_folders = arcpy.Parameter(
+            displayName="AGOL Folders",
+            name="agol_folder",
+            datatype="GPString",
+            parameterType="Required",
+            direction="Input",
+            multiValue=True)
+        
+        agol_folders.filter.type = "ValueList"
+        agol_folders.filter.list = [folder.name for folder in self.gis.content.folders.list()]
+        
         include_exclude = arcpy.Parameter(
             displayName="Include/Exclude Flag",
             name="include_exclude",
             datatype="GPString",
             parameterType="Optional",
-            direction="Input",
-            category="Folder Filter")
+            direction="Input")
         
+        include_exclude.value = "All"
         include_exclude.filter.type = "ValueList"
-        include_exclude.filter.list = ["Include", "Exclude"]
+        include_exclude.filter.list = ["Include", "Exclude", "All"]
 
         include_exclude_list = arcpy.Parameter(
-            displayName="AGOL Folder List",
+            displayName="AGOL Services",
             name="include_exclude_list",
             datatype="GPString",
             parameterType="optional",
             direction="Input",
             enabled=False,
-            multiValue=True,
-            category="Folder Filter")
+            multiValue=True)
+        
         include_exclude_list.filter.type="ValueList"
 
 
@@ -993,19 +1007,20 @@ class BackupServices:
             parameterType="Required",
             direction="Input")
         
+        backup_dir.value = INTRANET_BACKUP_DIR
 
-        excel_report = arcpy.Parameter(
-            displayName="Excel Report",
-            name="excel_report",
-            datatype="DEFile",
-            parameterType="Required",
-            direction="Output")
+        # excel_report = arcpy.Parameter(
+        #     displayName="Excel Report",
+        #     name="excel_report",
+        #     datatype="DEFile",
+        #     parameterType="Required",
+        #     direction="Output")
         
-        excel_report.filter.list = ["xlsx"]
-        excel_report.value = os.path.join(OUTPUTS_DIR, "BackupServices", f"BackupServices_{DATETIME_STR}.xlsx")
+        # excel_report.filter.list = ["xlsx"]
+        # excel_report.value = os.path.join(OUTPUTS_DIR, "BackupServices", f"BackupServices_{self.datetime_str}.xlsx")
 
 
-        params = [gdb_directory, spatial_reference,include_exclude, include_exclude_list,email_from, email_to, backup_dir, excel_report]
+        params = [agol_folders,spatial_reference,include_exclude, include_exclude_list,email_from, email_to, backup_dir]
         return params
 
     def isLicensed(self):
@@ -1016,24 +1031,34 @@ class BackupServices:
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
+        agol_folders = parameters[0]
+        include_exclude = parameters[2]
+        include_exclude_list = parameters[3]
+
+        if agol_folders.altered and not agol_folders.hasBeenValidated:
+            if agol_folders.valueAsText:
+                agol_folder_objs = [self.gis.content.folders.get(f.replace("'", "")) for f in agol_folders.valueAsText.split(";")]
+                include_exclude_list.filter.list = [i.title for folder_obj in agol_folder_objs for i in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
+        
+        if include_exclude.altered and not include_exclude.hasBeenValidated:
+            if include_exclude.valueAsText in ["Include", "Exclude"] and agol_folders.valueAsText:
+                include_exclude_list.enabled = True
+
+            else:
+                include_exclude_list.value = None
+                include_exclude_list.enabled = False
+
+        
         return
 
     def updateMessages(self, parameters):
         """Modify the messages created by internal validation for each tool
         parameter. This method is called after internal validation."""
-        include_exclude = parameters[2]
-        include_exclude_list = parameters[3]
         email_from = parameters[4]
         email_to = parameters[5]
-
-        if include_exclude.altered and not include_exclude.hasBeenValidated:
-            if include_exclude.valueAsText in ["Include", "Exclude"]:
-                include_exclude_list.enabled = True
-                include_exclude_list.filter.list = [i.name for i in self.gis.content.folders.list()]
-        elif not include_exclude.altered:
-            include_exclude_list.values = None
-            include_exclude_list.enabled = False
-                
+        include_exclude = parameters[2]
+        agol_folders = parameters[0]
+        include_exclude_list = parameters[3]
 
         if email_from.altered and not email_from.hasBeenValidated:
             if not email_from.valueAsText.lower().endswith("@hdrinc.com"):
@@ -1046,29 +1071,30 @@ class BackupServices:
                     if not email.lower().endswith("@hdrinc.com"):
                         email_to.setErrorMessage(f"All Emails need to be an HDR inc. email.\n{email}")
 
+
+        if include_exclude.valueAsText in ["Include", "Exclude"] and agol_folders.valueAsText and not include_exclude_list.valueAsText:
+            include_exclude_list.setErrorMessage("At Least One Service Needs to be Selected.")
+
         return
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        #[gdb_directory, spatial_reference, include_exclude, include_exclude_list,email_from, email_to, backup_dir]
-        gdb_dir = parameters[0].valueAsText
         spatial_reference = arcpy.SpatialReference(text=parameters[1].valueAsText)
-        excel_report = parameters[7].valueAsText
         backup_dir = parameters[6].valueAsText
         include_exclude = parameters[2].valueAsText
-        include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")]
-        email_from = parameters[4].valueAsText
-        email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")]
-
-        if __name__ == "__main__":
+        include_exclude_list = [i.replace("'","") for i in parameters[3].valueAsText.split(";")] if parameters[3].valueAsText else []
+        email_from = parameters[4].valueAsText if parameters[4].valueAsText else None
+        email_to = [i.replace("'", "") for i in parameters[5].valueAsText.split(";")] if parameters[5].valueAsText else None
+        agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
+        arcpy.AddMessage(__name__)
+        if __name__ == "__main__" or __name__ == "pyt":
             from src.tools.backupmanagement import TOOL_BackupServices
 
             TOOL_BackupServices.main(gis_conn=self.gis, 
-                                     gdb_directory=gdb_dir,
                                      spatial_reference=spatial_reference,
-                                     excel_report=excel_report,
+                                     agol_folder_objs=agol_folders,
                                      backup_dir=backup_dir,
-                                     include_exclude=include_exclude,
+                                     include_exclude_flag=include_exclude,
                                      include_exclude_list=include_exclude_list,
                                      email_from=email_from,
                                      email_to=email_to)
@@ -1196,10 +1222,11 @@ class UpdateServicesMeta:
 class AppendiciesReport:
     def __init__(self):
         """Define the tool (tool name is the name of the class)."""
-        self.label = "Appendicies Report (Excel Report)"
+        self.label = "Appendix Report (Excel Report)"
         self.description = ""
-        self.category = "Data Management Reports"
+        self.category = "Backup Management"
         self.gis = GIS("Pro")
+        self.datetime_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def getParameterInfo(self):
         """Define the tool parameters."""
@@ -1245,7 +1272,7 @@ class AppendiciesReport:
             direction="Output")
         
         output_excel.filter.list = ["xlsx"]
-        output_excel.value = os.path.join(OUTPUTS_DIR, "AppendiciesReports", f"AppendiciesReport_{DATETIME_STR}.xlsx")
+        output_excel.value = os.path.join(APPENDIX_H_INTRANET_DIR, f"AppendixH_{self.datetime_str}.xlsx")
 
         include_records = arcpy.Parameter(
             displayName="Include Records",
@@ -1258,8 +1285,26 @@ class AppendiciesReport:
         include_records.filter.type = "ValueList"
         include_records.filter.list = ["Overview Only", "Include Records"]        
 
+        email_from = arcpy.Parameter(
+            displayName="Email From",
+            name="email_from",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            category="Email")
+        
 
-        params = [agol_folders,include_exclude,include_exclude_list, output_excel, include_records]
+        email_to = arcpy.Parameter(
+            displayName="Email To",
+            name="email_to",
+            datatype="GPString",
+            parameterType="Optional",
+            direction="Input",
+            multiValue=True,
+            category="Email")
+
+
+        params = [agol_folders,include_exclude,include_exclude_list, output_excel, include_records, email_from, email_to]
         return params
 
     def isLicensed(self):
@@ -1274,49 +1319,64 @@ class AppendiciesReport:
         include_exclude = parameters[1]
         include_exclude_list = parameters[2]
 
-
-
-        if agol_folders.altered:
-            if include_exclude.valueAsText in ["Include", "Exclude"]:
-                include_exclude_list.enabled = True
+        if agol_folders.altered and not agol_folders.hasBeenValidated:
+            if agol_folders.valueAsText:
                 agol_folder_objs = [self.gis.content.folders.get(f.replace("'", "")) for f in agol_folders.valueAsText.split(";")]
-                include_exclude_list.filter.list = [i.name for folder_obj in agol_folder_objs for i in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
+                include_exclude_list.filter.list = [i.title for folder_obj in agol_folder_objs for i in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
+        
+        if include_exclude.altered and not include_exclude.hasBeenValidated:
+            if include_exclude.valueAsText in ["Include", "Exclude"] and agol_folders.valueAsText:
+                include_exclude_list.enabled = True
+
             else:
                 include_exclude_list.value = None
                 include_exclude_list.enabled = False
-            
 
-    
-
+        
         return
 
     def updateMessages(self, parameters):
         """Modify the messages created by internal validation for each tool
         parameter. This method is called after internal validation."""
+        email_from = parameters[5]
+        email_to = parameters[6]
+
+        if email_from.altered and not email_from.hasBeenValidated:
+            if not email_from.valueAsText.lower().endswith("@hdrinc.com"):
+                email_from.setErrorMessage("Senders email needs to be from an HDR inc. Email")
+        
+        if email_to.altered and not email_to.hasBeenValidated:
+            if email_to.valueAsText:
+                email_list = email_to.valueAsText.split(";")
+                for email in email_list:
+                    if not email.lower().endswith("@hdrinc.com"):
+                        email_to.setErrorMessage(f"All Emails need to be an HDR inc. email.\n{email}")
 
         return
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
         include_exclude_flag = parameters[1].valueAsText
-
-        include_exclude_list = [i.replace("'","") for i in parameters[2].valueAsText.split(";")] if parameters[2].valueAsText else None
-
+        include_exclude_list = [i.replace("'","") for i in parameters[2].valueAsText.split(";")] if parameters[2].valueAsText else []
         output_excel = parameters[3].valueAsText
-
         agol_folders = [self.gis.content.folders.get(f.replace("'","")) for f in parameters[0].valueAsText.split(";")]
-
         include_records = parameters[4].valueAsText
-
-        if __name__ == "__main__":
-            from src.tools.datamanagement import TOOL_AppendiciesReport
-
-            TOOL_AppendiciesReport.main(gis_conn=self.gis, 
+        email_from = parameters[5].valueAsText if parameters[5].valueAsText else None
+        email_to = [e.replace("'", "") for e in parameters[6].valueAsText] if parameters[6].valueAsText else None
+        scheduled = False
+        arcpy.AddMessage(__name__)
+        
+        if __name__ == "__main__" or __name__ == "pyt":
+            from src.tools.datamanagement import TOOL_AppendixReport
+            TOOL_AppendixReport.main(gis_conn=self.gis, 
                                         agol_folders=agol_folders,
                                         include_exclude_flag=include_exclude_flag, 
                                         output_excel=output_excel,
                                         include_records=include_records,
-                                        include_exclude_list=include_exclude_list
+                                        scheduled=scheduled,
+                                        include_exclude_list=include_exclude_list,
+                                        email_from=email_from,
+                                        email_to=email_to
                                         )
         return
 
