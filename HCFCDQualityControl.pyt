@@ -1224,7 +1224,7 @@ class AppendiciesReport:
         """Define the tool (tool name is the name of the class)."""
         self.label = "Appendix Report (Excel Report)"
         self.description = ""
-        self.category = "Data Management Reports"
+        self.category = "Backup Management"
         self.gis = GIS("Pro")
         self.datetime_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
