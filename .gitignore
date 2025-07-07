@@ -72,6 +72,13 @@ logs/UpdateMetadata/*
 logs/BackupServices/*
 logs/UpdateServiceMetadataBatch/*
 logs/AppendixReports/*
+logs/Scheduled/AppendixReports/*
+logs/Scheduled/BackupServices/*
+logs/Scheduled/AppendixReports_Sync/*
+logs/Scheduled/BackupServices_Entire/*
+logs/Scheduled/LogSync/*
+logs/Standalone/AppendixReports/*
+logs/Standalone/BackupServices/*
 
 !logs/CompareMetadata/.gitkeep
 !logs/CompareSpatialReferences/.gitkeep
@@ -81,6 +88,13 @@ logs/AppendixReports/*
 !logs/BackupServices/.gitkeep
 !logs/UpdateServiceMetadataBatch/.gitkeep
 !logs/AppendixReports/.gitkeep
+!logs/Scheduled/AppendixReports/.gitkeep
+!logs/Scheduled/BackupServices/.gitkeep
+!logs/Scheduled/AppendixReports_Sync/.gitkeep
+!logs/Scheduled/BackupServices_Entire/.gitkeep
+!logs/Scheduled/LogSync/.gitkeep
+!logs/Standalone/AppendixReports/.gitkeep
+!logs/Standalone/BackupServices/.gitkeep
 !logs/.gitkeep
 
 

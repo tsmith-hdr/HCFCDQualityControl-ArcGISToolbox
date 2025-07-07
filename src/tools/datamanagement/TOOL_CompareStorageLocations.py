@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.constants.paths import ROOT_DIR, PORTAL_ITEM_URL, LOG_DIR
 from src.constants.values import SHEET_NAME
-import src.classes.DataCatalog as dc
+import src.classes.datacatalog as dc
 #################################################################################################################################################################################################################
 ##Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")

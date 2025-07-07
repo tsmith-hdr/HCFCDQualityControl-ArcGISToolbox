@@ -1,7 +1,7 @@
 #######################################################################################################################################################
 ## Logging
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("root.meta")
 #######################################################################################################################################################
 ## Libraries
 import sys
@@ -16,7 +16,7 @@ if str(Path(__file__).resolve().parents[2]) not in sys.path:
     sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 
 
-from src.classes.DataCatalog import DataCatalogRow
+from src.classes.datacatalog import DataCatalogRow
 from src.constants.values import *
 
 

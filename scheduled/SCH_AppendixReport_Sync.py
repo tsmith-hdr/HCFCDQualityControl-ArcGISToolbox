@@ -9,39 +9,42 @@ from arcgis.gis import GIS
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
-from src.functions import utility
-from src.tools.backupmanagement import TOOL_AppendixReport
+from src.functions import email
 from src.constants.paths import  LOG_DIR, APPENDIX_H_INTRANET_DIR, SHAREPOINT_LOCAL_DIR, SHAREPOINT_APPENDIX_H_LOCAL_DIR
 #######################################################################################################################
 ## Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+LOG_FILE = os.path.join(LOG_DIR, "Scheduled","AppendixReports_Sync",f"AppendixH_Sync_{DATETIME_STR}.log")
 #############################################################################################################################
 ## Logging
-reload(logging)
-log_file =os.path.join(LOG_DIR, "AppendixReports",f"AppendixH_Sync_{DATETIME_STR}.log")
 
-logging.getLogger().disabled = True
-logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
-logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
-logging.getLogger("requests_oauthlib.oauth2_session").setLevel(logging.WARNING)
-
-logger = logging.getLogger(__name__)
-file_handler = logging.FileHandler(log_file, mode='w')
-formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-logger.setLevel(logging.INFO)
-logger.debug(logger)
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler(LOG_FILE)
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
 #######################################################################################################################
 ## Input Parameters 
 email_from = "Edward.smith@hdrinc.com"
-email_to = ["Edward.smith@hdrinc.com"]
+#email_to = ["Edward.smith@hdrinc.com"]
 #email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
-#email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"] ## Testing 
+email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"] ## Testing 
 email_subject = f"Appendix H SharePoint Sync {DATETIME_STR}"
 email_text_type = "plain"
-email_attachments = [log_file]
+email_attachments = [LOG_FILE]
 #######################################################################################################################
+logger.info(f"Run From Scheduler")
+logger.info(__file__)
 
 def main():
     if not os.path.exists(SHAREPOINT_LOCAL_DIR):
@@ -81,7 +84,7 @@ def main():
         """
     if email_from:
         logger.info(f"Sending Email...")
-        result = utility.sendEmail(sendTo=email_to, 
+        result = email.sendEmail(sendTo=email_to, 
                         sendFrom=email_from, 
                         subject=email_subject, 
                         message_text=email_message, 

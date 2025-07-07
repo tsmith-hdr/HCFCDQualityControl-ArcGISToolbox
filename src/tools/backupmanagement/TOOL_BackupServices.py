@@ -10,7 +10,6 @@ from pathlib import Path
 from importlib import reload  
 from zipfile import ZipFile
 
-
 import arcpy
 from arcpy import metadata as md
 
@@ -18,8 +17,9 @@ from arcgis.gis import GIS, ItemTypeEnum
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from src.constants.paths import LOG_DIR, OUTPUTS_DIR
+from src.constants.paths import OUTPUTS_DIR
 from src.functions import utility
+from src.functions import email
 from src.classes.servicelayer import ServiceLayer
 ########################################################################################################################################
 ## Environments
@@ -31,36 +31,22 @@ GDB_DIR = os.path.join(OUTPUTS_DIR, "BackupServices", "gdb")
 REPORT_DIR = os.path.join(OUTPUTS_DIR, "BackupServices", "report")
 OUTPUT_REPORT = os.path.join(REPORT_DIR, f"BackupServices_{DATETIME_STR}.xlsx")
 ZIP_DIR = os.path.join(OUTPUTS_DIR, "BackupServices", "zip")
-LOG_FILE = os.path.join(LOG_DIR, "BackupServices",f"BackupServices_{DATETIME_STR}.log")
+########################################################################################################################################
+## Logging
+logger = logging.getLogger(f"root.TOOL_BackupServices")
+log_file = utility.getLogFile(logger)
 ########################################################################################################################################
 ## Email Parameters
 email_subject = f"Service Backup {DATETIME_STR.split('-')[0]}"
-email_attachments = [OUTPUT_REPORT, LOG_FILE]
+email_attachments = [OUTPUT_REPORT, log_file] if log_file else [OUTPUT_REPORT]
 email_text_type = "plain"
 email_message = """
 Service Backup Complete
 Check the attached log file for details.
 Log File Path: {}
 Outputs path: {}
-""".format(LOG_FILE, OUTPUTS_DIR)
+""".format(log_file, OUTPUTS_DIR)
 ########################################################################################################################################
-## Logging
-reload(logging)
-log_file = LOG_FILE
-
-logging.getLogger().disabled = True
-logging.getLogger("arcgis.gis._impl._portalpy").setLevel(logging.WARNING)
-logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
-logging.getLogger("requests_oauthlib.oauth2_session").setLevel(logging.WARNING)
-
-logger=logging.getLogger(__name__)
-file_handler = logging.FileHandler(log_file, mode='w')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-logger.setLevel(logging.INFO)
-logger.info(logger)
-#############################################################################################################################
 def createFeatureDataset(gdb_path:str, dataset_name:str, spatial_reference:arcpy.SpatialReference)->None:
     arcpy.env.workspace = gdb_path
     formatted_name = dataset_name.translate({ord(c): "" for c in "!@#$%^&*()[] {};:,./<>?\|`~-=_+"})
@@ -74,10 +60,10 @@ def createFeatureDataset(gdb_path:str, dataset_name:str, spatial_reference:arcpy
     return
 
 
-def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs:list,backup_dir:str,include_exclude_flag:str, include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
-    ## List Input Parameters in the Log file
+def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs:list,backup_dir:str,include_exclude_flag:str, scheduled:bool,include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
+    logger.info(f"Scheduled: {scheduled}")
     logger.info(f"GIS Connection: {gis_conn}")
-    logger.info(f"GDB Directory: {GDB_DIR}")
+    logger.info(f"Geodatabase Path: {GDB_DIR}")
     logger.info(f"Spatial Reference: {spatial_reference.factoryCode}")
     logger.info(f"Excel Report: {OUTPUT_REPORT}")
     logger.info(f"Backup Directory: {backup_dir}")
@@ -85,12 +71,12 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
     logger.info(f"Service List: {include_exclude_list}")
     logger.info(f"Email From: {email_from}")
     logger.info(f"Email To: {email_to}")
+    logger.info(f"Log File: {log_file}")
     logger.info("~~"*100)
     logger.info("~~"*100)
 #############################################################################################################################
     ## Output Data Frame Lists 
     df_list = []
-    item_obj_list = []
     failed = []
 #############################################################################################################################
     ## Creating the Local File GDB. If the Overwrite Outputs environment is set to False, this will fail
@@ -106,6 +92,7 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
 
     ## Iterate over the input folders and create a corresponding Feature Dataset. The Dataset Names are cleaned so as to not raise errors.
     for folder_obj in agol_folder_objs:
+
         logger.info(f"AGOL Folder: {folder_obj}")
         dataset_name = folder_obj.name.translate({ord(c): "" for c in "!@#$%^&*()[] {};:,./<>?\|`~-=_+"}) ## Removes any special characters
         logger.info(f"Formatted AGOL Folder Name: {dataset_name}")
@@ -114,48 +101,48 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
         ## Retrieving the Portal Item Objects that need to be excluded or included in the backup.
         if include_exclude_flag.strip().lower()  == "include":
             logger.debug("Hit Include")
-            [item_obj_list.append(item) for item in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)if item.title in include_exclude_list]
+            item_obj_list=[item_obj for item_obj in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value) if item_obj.title in include_exclude_list]
         elif include_exclude_flag.strip().lower() == "exclude":
             logger.debug("Hit Exclude")
-            [item_obj_list.append(item) for item in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value) if item.title not in include_exclude_list]
+            item_obj_list=[item_obj for item_obj in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value) if item_obj.title not in include_exclude_list]
         elif include_exclude_flag.strip().lower()  == "all":
             logger.debug("Hit All")
-            [item_obj_list.append(item) for item in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
+            item_obj_list=[item_obj for item_obj in folder_obj.list(item_type=ItemTypeEnum.FEATURE_SERVICE.value)]
             
-    logger.info(f"AGOL Item Count: {len(item_obj_list)}")
-    ## Iterates over the Item Obj and creates a Service Layer Object for each of the layers in the service. 
-    # This Class is stored in src/classes/servicelayer.py
-    arcpy.AddMessage(f"Exporting Services...")
-    for item_obj in item_obj_list:
-        logger.info(f"AGOL Item: {item_obj}")
-        logger.info(f"Layer Count: {len(item_obj.layers)}")
-        for layer_obj in item_obj.layers:
-            sl_obj = ServiceLayer(gis_conn, layer_obj, item_obj)
-            logger.debug(sl_obj)
-            logger.info(f"Layer: {sl_obj.layerName}")
-            ## Exports the Service Layer to the Local GDB.
-            # The export method will only export features that intersect with the extent of the study area. 
-            # returns a dictionary of items to update the backedup feature class metadata.
-            try:
-                out_dict = sl_obj.exportLayer(out_workspace=os.path.join(local_gdb_path, dataset_name))
-            except Exception as e:
-                failed.append({"Layer":sl_obj.layerName, "Action":"Export Layer", "Error":e})
+        logger.info(f"AGOL Item Count: {len(item_obj_list)}")
+        ## Iterates over the Item Obj and creates a Service Layer Object for each of the layers in the service. 
+        # This Class is stored in src/classes/servicelayer.py
+        arcpy.AddMessage(f"Exporting Services...")
+        for item_obj in item_obj_list:
+            logger.info(f"AGOL Item: {item_obj}")
+            logger.info(f"Layer Count: {len(item_obj.layers)}")
+            for layer_obj in item_obj.layers:
+                sl_obj = ServiceLayer(gis_conn, layer_obj, item_obj)
+                logger.debug(sl_obj)
+                logger.info(f"Layer: {sl_obj.layerName}")
+                ## Exports the Service Layer to the Local GDB.
+                # The export method will only export features that intersect with the extent of the study area. 
+                # returns a dictionary of items to update the backedup feature class metadata.
+                try:
+                    out_dict = sl_obj.exportLayer(out_workspace=os.path.join(local_gdb_path, dataset_name))
+                except Exception as e:
+                    failed.append({"Layer":sl_obj.layerName, "Action":"Export Layer", "Error":e})
 
-            out_dict["Folder Name"] = folder_obj.name
+                out_dict["Folder Name"] = folder_obj.name
 
-            df_list.append(out_dict)
-            logger.debug(f"Layer Metadata Dictionary:\n{out_dict}")
-            logger.info(f"Updating Layer Metadata...")
-            try:
-                meta = md.Metadata(out_dict["Feature Class Path"])
-                meta.summary = f"Created as part of a backup on {DATETIME_STR.split('-')[0]} performed by {os.getlogin()}"
-                meta.tags = f"Layer Name:{out_dict['Layer Name']}, Layer URL:{out_dict['Layer URL']}, Service Item Id:{out_dict['Service Item Id']}"
-                meta.credits = out_dict["Service Credits"]
-                meta.save()
-                logger.info(f"Save Successfull...")
-            except Exception as m:
-                logger.error(f"Failed To Update Layer Metadata: {m}")
-                failed.append({"Layer":sl_obj.layerName, "Action":"Update Feature Class Metadata", "Error":m})
+                df_list.append(out_dict)
+                logger.debug(f"Layer Metadata Dictionary:\n{out_dict}")
+                logger.info(f"Updating Layer Metadata...")
+                try:
+                    meta = md.Metadata(out_dict["Feature Class Path"])
+                    meta.summary = f"Created as part of a backup on {DATETIME_STR.split('-')[0]} performed by {os.getlogin()}"
+                    meta.tags = f"Layer Name:{out_dict['Layer Name']}, Layer URL:{out_dict['Layer URL']}, Service Item Id:{out_dict['Service Item Id']}"
+                    meta.credits = out_dict["Service Credits"]
+                    meta.save()
+                    logger.info(f"Save Successfull...")
+                except Exception as m:
+                    logger.error(f"Failed To Update Layer Metadata: {m}")
+                    failed.append({"Layer":sl_obj.layerName, "Action":"Update Feature Class Metadata", "Error":m})
 
 
     ## Here we are compressing the file gdb this is a lossl_objess function. We want to add this process to make sure that the archived records are unable to be editied.
@@ -250,7 +237,7 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
     ## If the email from parameter is entered, there will be an attempt to send an email with the excel report and log file.
     if email_from:
         logger.info("Sending Email...")
-        result = utility.sendEmail(sendTo=",".join(email_to), sendFrom=email_from, subject=email_subject, message_text=email_message+"Backup Directory: {}".format(backup_dir), text_type=email_text_type, attachments=email_attachments)
+        result = email.sendEmail(sendTo=email_to, sendFrom=email_from, subject=email_subject, message_text=email_message+"Backup Directory: {}".format(backup_dir), text_type=email_text_type, attachments=email_attachments)
         logger.info(result)
     
 
