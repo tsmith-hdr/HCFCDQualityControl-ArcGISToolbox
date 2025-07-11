@@ -10,7 +10,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
 from src.functions import utility, email
 from src.tools.backupmanagement import TOOL_AppendixReport
-from src.constants.paths import  PORTAL_URL, APPENDIX_H_INTRANET_DIR, LOG_DIR
+from src.constants.paths import  PORTAL_URL, INTRANET_APPENDIX_H_DIR, LOG_DIR
 #######################################################################################################################
 ## Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -21,10 +21,10 @@ agol_folder_names = ["Measures"]
 include_records="Include Records" ## 'Overview Only' and 'Include Records'pro
 include_exclude = "Include" ## 'Include', 'Exclude', 'All
 include_exclude_list = ["SAFER Mitigation Measures (HDR 2025)"] ## Portal Item Title. The name on the Blue Ribbon
-output_excel = os.path.join(APPENDIX_H_INTRANET_DIR,"AppendixH_{}.xlsx".format(DATETIME_STR))
+output_excel = os.path.join(INTRANET_APPENDIX_H_DIR,"AppendixH_{}.xlsx".format(DATETIME_STR))
 email_from = "Edward.smith@hdrinc.com"
-email_to= ["Edward.smith@hdrinc.com"]
-#email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
+#email_to= ["Edward.smith@hdrinc.com"]
+email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
 #email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"] ## Testing 
 #######################################################################################################################
 ## Logging

@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 print(sys.path)
     
 from src.functions import utility
-from src.constants.paths import PORTAL_URL, OUTPUTS_DIR, APPENDIX_H_INTRANET_DIR, INTRANET_BACKUP_DIR
+from src.constants.paths import PORTAL_URL, OUTPUTS_DIR, INTRANET_APPENDIX_H_DIR, INTRANET_BACKUP_DIR
 #############################################################################################################################
 ## Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -1272,7 +1272,7 @@ class AppendiciesReport:
             direction="Output")
         
         output_excel.filter.list = ["xlsx"]
-        output_excel.value = os.path.join(APPENDIX_H_INTRANET_DIR, f"AppendixH_{self.datetime_str}.xlsx")
+        output_excel.value = os.path.join(INTRANET_APPENDIX_H_DIR, f"AppendixH_{self.datetime_str}.xlsx")
 
         include_records = arcpy.Parameter(
             displayName="Include Records",

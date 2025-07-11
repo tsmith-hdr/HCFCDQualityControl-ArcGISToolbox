@@ -19,14 +19,13 @@ DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 LOG_FILE = os.path.join(LOG_DIR, "Scheduled", "BackupServices", f"BackupServices_{DATETIME_STR}_Scheduled.log")
 #######################################################################################################################
 ## Input Parameters 
-spatial_reference = arcpy.SpatialReference(6588) 
 backup_dir = INTRANET_BACKUP_DIR 
 agol_folder_names = ["Measures"]
 include_exclude_list = ["SAFER Mitigation Measures (HDR 2025)"]#, "Data", "Exisitng Infrastructure", "Future Projects", "H&H", "Half Layers (2025-04-29)", "Hazardous, Toxic, Radioactive Waste (HTRW)", "Measures", "Real Estate"]  ## list of the category specific Geodatabase names that should be evaluated. If left blank all fgdbs will be evaluated
 include_exclude = "Include"
 email_from="edward.smith@hdrinc.com"
-email_to=["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"]
-#email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
+#email_to=["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"]
+email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
 #######################################################################################################################
 ## Logging
 

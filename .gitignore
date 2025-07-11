@@ -49,6 +49,7 @@ outputs/AppendixReports/*
 outputs/BackupServices/gdb/*
 outputs/BackupServices/report/*
 outputs/BackupServices/zip/*
+outputs/DataCatalog/*
 
 !outputs/CompareMetadata/.gitkeep
 !outputs/CompareSpatialReferences/.gitkeep
@@ -60,6 +61,7 @@ outputs/BackupServices/zip/*
 !outputs/BackupServices/report/.gitkeep
 !outputs/BackupServices/zip/.gitkeep
 !outputs/AppendixReports/.gitkeep
+!outputs/DataCatalog/.gitkeep
 !outputs/.gitkeep
 
 
@@ -79,6 +81,9 @@ logs/Scheduled/BackupServices_Entire/*
 logs/Scheduled/LogSync/*
 logs/Standalone/AppendixReports/*
 logs/Standalone/BackupServices/*
+logs/Scheduled/DataCatalog/*
+logs/Standalone/DataCatalog/*
+logs/Scheduled/DataCatalog_Sync/*
 
 !logs/CompareMetadata/.gitkeep
 !logs/CompareSpatialReferences/.gitkeep
@@ -95,6 +100,9 @@ logs/Standalone/BackupServices/*
 !logs/Scheduled/LogSync/.gitkeep
 !logs/Standalone/AppendixReports/.gitkeep
 !logs/Standalone/BackupServices/.gitkeep
+!logs/Scheduled/DataCatalog/.gitkeep
+!logs/Standalone/DataCatalog/.gitkeep
+!logs/Scheduled/DataCatalog_Sync/.gitkeep
 !logs/.gitkeep
 
 

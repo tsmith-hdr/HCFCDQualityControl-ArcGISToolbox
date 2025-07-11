@@ -29,7 +29,9 @@ log_directories = [
     "AppendixReports",
     "BackupServices",
     "AppendixReports_Sync",
-    "BackupServices_Entire"
+    "BackupServices_Entire",
+    "DataCatalog",
+    "DataCatalog_Sync"
 ]
 #######################################################################################################################
 ## Logging

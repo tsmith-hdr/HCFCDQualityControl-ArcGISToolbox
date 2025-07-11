@@ -46,3 +46,8 @@ LOCAL_SERVICE_LOOKUP = {
     "Credits":"accessInformation",
     "Terms of Use":"licenseInfo"
 }
+
+
+
+EXTERNAL_GROUP_NAME = "SAFER - External share group"
+EXTERNAL_GROUP_ITEMID = "acf03764bdab420abe07ee61452012ea"

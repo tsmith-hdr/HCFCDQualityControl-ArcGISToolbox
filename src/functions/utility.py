@@ -75,8 +75,6 @@ def authenticateAgolConnection(portal_url):
     return gis_conn
 
 
-
-
 def valueTableToDictionary(metadata_str:str)->dict:
     out_dict = {}
     metadata_vt = arcpy.ValueTable(2)
@@ -90,7 +88,7 @@ def valueTableToDictionary(metadata_str:str)->dict:
 
 
 def epochToString(epoch):
-    timestamp = datetime.fromtimestamp(epoch)
+    timestamp = datetime.fromtimestamp(epoch/1000)
     time_string = timestamp.strftime("%m/%d/%Y")
 
     return (timestamp,time_string)

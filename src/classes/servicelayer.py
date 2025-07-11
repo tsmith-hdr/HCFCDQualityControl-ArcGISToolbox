@@ -11,7 +11,8 @@ from arcgis.gis import Item
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.constants.paths import SHP_DIR
+from src.functions import meta
+from src.constants.paths import SHP_DIR, PORTAL_ITEM_URL
 from src.constants.values import PROJECT_SPATIAL_REFERENCE
 #################################################################################################################################################################################
 logger = logging.getLogger("root.servicelayer")
@@ -29,7 +30,10 @@ class ServiceLayer():
         self.parentServiceName = self.parentPortalItem.name
         self.parentServiceUrl = self.parentPortalItem.url
         self.parentId = portal_obj.id
+        self.portalItemUrl = f"{PORTAL_ITEM_URL}{self.parentId}"
         self.portalTitle = self.parentPortalItem.title
+        self.portalCategories = self.parentPortalItem.categories
+        self.portalCategory = self.portalCategories[0].split("/")[-1] if self.portalCategories else None
         self.portalCreatedDate = self.parentPortalItem.created ## Return Epoch
         self.portalModifiedDate = self.parentPortalItem.modified ## Return Epoch
         self.portalDescription = self.parentPortalItem.description
@@ -40,6 +44,7 @@ class ServiceLayer():
         self.layerName = self.layerProperties["name"]
         self.layerUrl = layer_obj.url
         self.layerId = self.layerProperties["id"]
+        self.layerPortalUrl = f"{self.portalItemUrl}&sublayer={self.layerId}"
         self.layerSchemaEditDate = self.layerProperties["editingInfo"]["schemaLastEditDate"] if hasattr(self.layerProperties,"editingInfo") else None ## Return Epoch
         self.layerDataEditDate = self.layerProperties["editingInfo"]["dataLastEditDate"] if hasattr(self.layerProperties,"editingInfo") else None## Return Epoch
         self.layerPropertiesEditDate = self.layerProperties["editingInfo"]["lastEditDate"] if hasattr(self.layerProperties,"editingInfo") else None## Return Epoch
@@ -70,6 +75,24 @@ class ServiceLayer():
     def _getParentPortalItem(self)->Item:
         return self.gis_conn.content.get(self.layerProperties["serviceItemId"])
     
+    def dataCatalogDictionary(self)->dict:
+        out_dict = {}
+        out_dict["Service Name"] = self.parentServiceName if self.parentServiceName else self.layerUrl.split("/")[-3]
+        out_dict["Item ID"] = self.parentId
+        out_dict["Item Title"] = None
+        out_dict["Item Last Edited Date"] = None
+        out_dict["Layer Name"] = self.layerName
+        out_dict["Layer ID"] = self.layerId
+        out_dict["Layer Last Edited Date"] = self.epochToString(self.layerDataEditDate)
+        out_dict["Web App Category"] = self.portalCategory
+        out_dict["Metadata - Description"] = meta.formatMdItem(self.layerDescription, "description", "plain")
+        out_dict["Metadata - Summary"] = self.portalSummary
+        out_dict["Metadata - Tags"] = self.portalTags
+        out_dict["Metadata - Credits"] = meta.formatMdItem(self.layerCredits, "accessconstraints", "plain")
+        out_dict["Metadata - License Information"] = meta.formatMdItem(self.portalTermsOfUse, "licenseinfo", "plain")
+        out_dict["AGOL URL"] = self.layerPortalUrl
+
+        return out_dict
     
     def propertyDictionary(self)->dict:
         out_dict = {}
