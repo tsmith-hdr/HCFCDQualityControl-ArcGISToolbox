@@ -36,9 +36,9 @@ logger.addHandler(ch)
 #######################################################################################################################
 ## Input Parameters 
 email_from = "Edward.smith@hdrinc.com"
-#email_to = ["Edward.smith@hdrinc.com"]
+email_to = ["Edward.smith@hdrinc.com"]
 #email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
-email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"] ## Testing 
+#email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"] ## Testing 
 email_subject = f"Appendix H SharePoint Sync {DATETIME_STR}"
 email_text_type = "plain"
 email_attachments = [LOG_FILE]

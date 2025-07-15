@@ -22,6 +22,8 @@ include_records="Include Records" ## 'Overview Only' and 'Include Records'pro
 include_exclude = "Include" ## 'Include', 'Exclude', 'All
 include_exclude_list = ["SAFER Mitigation Measures (HDR 2025)"] ## Portal Item Title. The name on the Blue Ribbon
 output_excel = os.path.join(INTRANET_APPENDIX_H_DIR,"AppendixH_{}.xlsx".format(DATETIME_STR))
+## Email Parameters
+email_subject = f"Appendix Report {DATETIME_STR.split('-')[0]}"
 email_from = "Edward.smith@hdrinc.com"
 #email_to= ["Edward.smith@hdrinc.com"]
 email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
@@ -65,14 +67,47 @@ if __name__ == "__main__":
 
     agol_folders = [gis_connection.content.folders.get(f.replace("'","")) for f in agol_folder_names]
 
+    ## Logging Input Parameters
+    logger.info(f"GIS Connection: {gis_connection}")
+    logger.info(f"AGOL Folders: {agol_folders}")
+    logger.info(f"Excel Report: {output_excel}")
+    logger.info(f"Include/Exclude Flag: {include_exclude}")
+    logger.info(f"Service List: {include_exclude_list}")
+    logger.info(f"Email From: {email_from}")
+    logger.info(f"Email To: {email_to}")
+    logger.info("~~"*100)
+    logger.info("~~"*100)
 
     TOOL_AppendixReport.main(gis_conn=gis_connection,
-                                agol_folders=agol_folders,
-                                include_exclude_flag=include_exclude,
-                                include_exclude_list=include_exclude_list,
-                                include_records=include_records,
-                                scheduled=scheduled,
-                                output_excel=output_excel,
-                                email_from=email_from,
-                                email_to=email_to
-                                )
+                             agol_folders=agol_folders,
+                             include_exclude_flag=include_exclude,
+                             include_exclude_list=include_exclude_list,
+                             include_records=include_records,
+                             output_excel=output_excel)
+
+
+    ## Emails the result of the process.
+    if email_from:
+        logger.info(f"Sending Email...")
+        email_text = """
+        Attached is a copy of the report.
+        Appendix H Report run on {}. 
+        Input Folders: {}
+        -- Input Services --
+        {}
+
+        Output Excel Path: {}
+        Local User: {}
+        GIS User: {}
+        """.format(DATETIME_STR, agol_folder_names,"\n".join(include_exclude_list), output_excel, os.getlogin(), gis_connection.users.me.username)
+        result = email.sendEmail(sendTo=email_to, sendFrom=email_from, subject=email_subject, message_text=email_text, text_type="plain", attachments=[output_excel, LOG_FILE])
+        logger.info(result)
+        
+    ## Trys to open the excel report. Logs warning if unable to open.
+    # I have the scheduled flag included so if the tool is run from task scheduler the excel file is not locked and will not throw any issues when trying to move.
+    if not scheduled:
+        logger.info(f"Opening Excel Report...")
+        try:
+            os.startfile(output_excel)
+        except Exception as t:
+            logger.warning(f"Failed to Launch Excel")

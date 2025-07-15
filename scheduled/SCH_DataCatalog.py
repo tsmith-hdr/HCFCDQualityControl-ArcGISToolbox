@@ -22,8 +22,8 @@ LOG_FILE = os.path.join(LOG_DIR, "Scheduled","DataCatalog",f"DataCatalog_{DATETI
 output_excel =str(Path(INTRANET_APPENDIX_E_DIR, f"DataCatalog_{DATETIME_STR}.xlsx"))
 email_subject = f"Data Catalog {DATETIME_STR.split('-')[0]}"
 email_from = "Edward.smith@hdrinc.com"
-email_to = ["edward.smith@hdrinc.com"]
-#email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
+#email_to = ["edward.smith@hdrinc.com"]
+email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
 #email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com"] ## Testing 
 #######################################################################################################################
 ## Logging

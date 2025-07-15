@@ -19,24 +19,14 @@ from src.classes.servicelayer import ServiceLayer
 ## Globals
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 #############################################################################################################################
-## Email Parameters
-subject = f"Appendix Report {DATETIME_STR.split('-')[0]}"
+
 #############################################################################################################################
 ## Logger
 logger = logging.getLogger(f"root.TOOL_AppendixReport")
 log_file = utility.getLogFile(logger)
 #############################################################################################################################
-def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel:str, include_records:str,scheduled:bool,include_exclude_list:list=None, email_from:str=None, email_to:list=None)->None:
-    ## Logging Input Parameters
-    logger.info(f"GIS Connection: {gis_conn}")
-    logger.info(f"AGOL Folders: {agol_folders}")
-    logger.info(f"Excel Report: {output_excel}")
-    logger.info(f"Include/Exclude Flag: {include_exclude_flag}")
-    logger.info(f"Service List: {include_exclude_list}")
-    logger.info(f"Email From: {email_from}")
-    logger.info(f"Email To: {email_to}")
-    logger.info("~~"*100)
-    logger.info("~~"*100)
+def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel:str, include_records:str,include_exclude_list:list=None)->None:
+
     #########################################################################################################################
     ## Empty lists used later in the process
     property_list = [] ## Holds the Items that will populate the Overview Sheet of the report. 
@@ -121,32 +111,7 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
             for j in record_list:
                 j["df"].to_excel(writer, sheet_name=j["sheet_name"], index=False)
 
-    ## Emails the result of the process.
-    if email_from:
-        logger.info(f"Sending Email...")
-        email_text = """
-        Attached is a copy of the report.
-        Appendix H Report run on {}. 
-        -- Input Services --
-        {}
 
-        Output Excel Path: {}
-        Local User: {}
-        GIS User: {}
-        """.format(DATETIME_STR, "\n".join([i.title for i in item_list]), output_excel, os.getlogin(), gis_conn.users.me.username)
-        result = email.sendEmail(sendTo=email_to, sendFrom=email_from, subject=subject, message_text=email_text, text_type="plain", attachments=[output_excel, log_file])
-        logger.info(result)
-        
-    ## Trys to open the excel report. Logs warning if unable to open.
-    # I have the scheduled flag included so if the tool is run from task scheduler the excel file is not locked and will not throw any issues when trying to move.
-    if not scheduled:
-        arcpy.AddMessage(f"Opening Excel Report...")
-        logger.info(f"Opening Excel Report...")
-        try:
-            os.startfile(output_excel)
-        except Exception as t:
-            arcpy.AddWarning(f"Failed to Launch Excel")
-            logger.warning(f"Failed to Launch Excel")
 
     return 
 
