@@ -4,12 +4,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-PROJECT_SPATIAL_REFERENCE = arcpy.SpatialReference(6588)
+PROJECT_SPATIAL_REFERENCE = arcpy.SpatialReference(2278)
 
 SHEET_NAME = "Test Data Catalog"
-
-
-
 
 
 DF_COLUMNS = ["Local - Exist",  
@@ -49,3 +46,8 @@ LOCAL_SERVICE_LOOKUP = {
     "Credits":"accessInformation",
     "Terms of Use":"licenseInfo"
 }
+
+
+
+EXTERNAL_GROUP_NAME = "SAFER - External share group"
+EXTERNAL_GROUP_ITEMID = "acf03764bdab420abe07ee61452012ea"

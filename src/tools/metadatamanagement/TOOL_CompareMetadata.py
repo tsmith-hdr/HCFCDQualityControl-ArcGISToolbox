@@ -18,7 +18,7 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-import  src.classes.DataCatalog as dc 
+import  src.classes.datacatalog as dc 
 from src.functions import meta
 from src.constants.paths import LOG_DIR
 from src.constants.values import DF_COLUMNS, SERVICE_ITEM_LOOKUP, SHEET_NAME

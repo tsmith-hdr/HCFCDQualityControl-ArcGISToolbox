@@ -14,7 +14,7 @@ from arcgis.gis import GIS
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from src.classes.DataCatalog import DataCatalogRow
+from src.classes.datacatalog import DataCatalogRow
 from src.constants.paths import PORTAL_ITEM_URL, LOG_DIR
 from src.constants.values import SHEET_NAME
 #################################################################################################################################################################################################################

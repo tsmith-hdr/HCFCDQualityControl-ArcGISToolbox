@@ -1,7 +1,7 @@
 #######################################################################################################################################################
 ## Logging
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("root.meta")
 #######################################################################################################################################################
 ## Libraries
 import sys
@@ -16,7 +16,7 @@ if str(Path(__file__).resolve().parents[2]) not in sys.path:
     sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 
 
-from src.classes.DataCatalog import DataCatalogRow
+from src.classes.datacatalog import DataCatalogRow
 from src.constants.values import *
 
 
@@ -80,13 +80,13 @@ def getMetadata(row_obj:DataCatalogRow, md_items:list, text_type:str)->dict:
             local_md_attr = "Dataset Doesn't Exist"
         else:
             if hasattr(local_md_obj, md_item):
-                local_md_attr = _formatMdItems(getattr(local_md_obj, md_item),md_item, text_type) if getattr(local_md_obj, md_item) else "Missing"
+                local_md_attr = formatMdItem(getattr(local_md_obj, md_item),md_item, text_type) if getattr(local_md_obj, md_item) else "Missing"
 
         if not service_exist:
             service_md_attr = "Dataset Doesn't Exist"
         else:
             if hasattr(service_obj, SERVICE_ITEM_LOOKUP[md_item]):
-                service_md_attr = _formatMdItems(getattr(service_obj, SERVICE_ITEM_LOOKUP[md_item]),SERVICE_ITEM_LOOKUP[md_item], text_type) if getattr(service_obj, SERVICE_ITEM_LOOKUP[md_item]) else "Missing"
+                service_md_attr = formatMdItem(getattr(service_obj, SERVICE_ITEM_LOOKUP[md_item]),SERVICE_ITEM_LOOKUP[md_item], text_type) if getattr(service_obj, SERVICE_ITEM_LOOKUP[md_item]) else "Missing"
 
 
 
@@ -118,13 +118,13 @@ def getMetadata(row_obj:DataCatalogRow, md_items:list, text_type:str)->dict:
 
 
         
-def _formatMdItems(text:str, md_item:str, text_type:str)->str:
+def formatMdItem(text:str, md_item:str, text_type:str)->str:
     """
     Using ReGex to strip HTML Tags from the Description, Summary, and Access Constraints.
     The Item Tags are also formatted from a string to a list and all spaces are striped and the list is sorted.
     """
 
-    if text and text_type == "Plain" and md_item in ["description", "accessConstraints", "licenseInfo"]:
+    if text and text_type.lower() == "plain" and md_item.lower().replace(" ","") in ["description", "accessconstraints", "licenseinfo"]:
         bs = BeautifulSoup(text,'html.parser')
 
         a_tags = bs.find_all('a', href=True)

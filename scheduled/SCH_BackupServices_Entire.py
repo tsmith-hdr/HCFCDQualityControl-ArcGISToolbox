@@ -16,13 +16,13 @@ from src.constants.paths import  PORTAL_URL, INTRANET_BACKUP_DIR, LOG_DIR
 from src.constants.values import PROJECT_SPATIAL_REFERENCE
 #######################################################################################################################
 DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-LOG_FILE = os.path.join(LOG_DIR, "Scheduled", "BackupServices", f"BackupServices_{DATETIME_STR}_Scheduled.log")
+LOG_FILE = os.path.join(LOG_DIR, "Scheduled", "BackupServices_Entire", f"BackupServices_{DATETIME_STR}_Scheduled.log")
 #######################################################################################################################
 ## Input Parameters 
-backup_dir = INTRANET_BACKUP_DIR 
-agol_folder_names = ["Measures", "Alternatives"]
-include_exclude_list = ["SAFER Mitigation Measures (HDR 2025)", "Alternative Extents", "Alternative"]#, "Data", "Exisitng Infrastructure", "Future Projects", "H&H", "Half Layers (2025-04-29)", "Hazardous, Toxic, Radioactive Waste (HTRW)", "Measures", "Real Estate"]  ## list of the category specific Geodatabase names that should be evaluated. If left blank all fgdbs will be evaluated
-include_exclude = "Include"
+backup_dir = None#INTRANET_BACKUP_DIR 
+folder_avoid_list = []
+include_exclude_list = []#, "Data", "Exisitng Infrastructure", "Future Projects", "H&H", "Half Layers (2025-04-29)", "Hazardous, Toxic, Radioactive Waste (HTRW)", "Measures", "Real Estate"]  ## list of the category specific Geodatabase names that should be evaluated. If left blank all fgdbs will be evaluated
+include_exclude = "All"
 #######################################################################################################################
 ## Logging
 
@@ -41,21 +41,20 @@ ch.setFormatter(formatter)
 # add the handlers to the logger
 logger.addHandler(fh)
 logger.addHandler(ch)
-
 #######################################################################################################################
 ## Email Parameters
 email_from="edward.smith@hdrinc.com"
-email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
+email_to=["edward.smith@hdrinc.com"]
 email_subject = f"Service Backup {DATETIME_STR.split('-')[0]}"
 email_text_type = "plain"
 email_message = """
     Service Backup Complete
     Check the attached log file for details.
     Outputs Directory: {}
-    AGOL Folders: {}
+    AGOL Folders Avoid: {}
     Include Exclude: {}
     Include Exclude List: {}
-    """.format(backup_dir, agol_folder_names, include_exclude, include_exclude_list)
+    """.format(backup_dir, folder_avoid_list, include_exclude, include_exclude_list)
 #######################################################################################################################
 logger.info(f"Run From Scheduler")
 logger.info(__file__)
@@ -73,9 +72,8 @@ if __name__ == "__main__":
 
     else:
         gis_connection = utility.authenticateAgolConnection(PORTAL_URL)
-        scheduled = False
 
-    agol_folders = [gis_connection.content.folders.get(f.replace("'","")) for f in agol_folder_names]
+    agol_folders = [f for f in gis_connection.content.folders.list() if f.name not in folder_avoid_list]
 
     outputs_report, zipped_file = TOOL_BackupServices.main(gis_conn=gis_connection,
                                                             spatial_reference=PROJECT_SPATIAL_REFERENCE,

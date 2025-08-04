@@ -1,30 +1,22 @@
 #######################################################################################################################################################
 ## Logging
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"root.utility")
 #######################################################################################################################################################
 import json
 import sys
 import os
 import getpass
+import zipfile
 from pathlib import Path
 from datetime import datetime
 
 import arcpy
 from arcgis.gis import GIS
 
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
-from email.mime.text import MIMEText
-
-if str(Path(__file__).resolve().parents[2]) not in sys.path:
-    sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
-
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 
 from src.constants.values import *
-
-
 ################################################################################################################################################################
 
 def getValueFromJSON(json_file, key):
@@ -34,6 +26,7 @@ def getValueFromJSON(json_file, key):
             return data[key] 
        
     except Exception as e:
+        logger.error(e)
         print("Error: ", e)
 
 def isTaskScheduler()->bool:
@@ -41,6 +34,8 @@ def isTaskScheduler()->bool:
     Checks to see if the standalone file is being run from the console or run in a scheduled task.
     """
     # Check for an environment variable that might indicate Task Scheduler
+    logger.debug(os.getenv("SESSIONNAME"))
+    logger.debug(os.getenv('SCHEDULER_LAUNCH'))
     print(os.getenv("SESSIONNAME"))
     print(os.getenv('SCHEDULER_LAUNCH'))
     return os.getenv('SESSIONNAME') != 'Console' and os.getenv('SCHEDULER_LAUNCH') is None
@@ -81,37 +76,6 @@ def authenticateAgolConnection(portal_url):
     return gis_conn
 
 
-def sendEmail(sendTo:list, sendFrom:str, subject:str, message_text:str, text_type:str, attachments:list)->str:
-    returnMsgs = ''
-    # if type(sendTo) == list:
-    #     send_to = ", ".join(sendTo)
-    # else:
-    #     send_to = sendTo
-    try:
-        msg = MIMEMultipart()
-        msg['Subject'] = subject
-
-        msg.attach(MIMEText(message_text, text_type.lower()))
-        ## Adds files to email as attachments
-        for attachment in attachments or []:
-            with open(attachment, "rb") as f:
-                file = MIMEApplication(f.read(), name=os.path.basename(attachment))
-            
-            # After the file is closed
-            file['Content-Disposition'] = f'attachment; filename="{os.path.basename(attachment)}"' 
-            msg.attach(file)
-        smtp = smtplib.SMTP('smtp.hdrinc.com')
-        smtp.sendmail(sendFrom, sendTo, msg.as_string())
-        smtp.close()
-
-        returnMsgs = f'-- Message Sent To --\n{sendTo}'
-
-    except Exception as e:
-        returnMsgs = str(e)
-    
-    return returnMsgs
-
-
 def valueTableToDictionary(metadata_str:str)->dict:
     out_dict = {}
     metadata_vt = arcpy.ValueTable(2)
@@ -125,7 +89,44 @@ def valueTableToDictionary(metadata_str:str)->dict:
 
 
 def epochToString(epoch):
-    timestamp = datetime.fromtimestamp(epoch)
+    timestamp = datetime.fromtimestamp(epoch/1000)
     time_string = timestamp.strftime("%m/%d/%Y")
 
     return (timestamp,time_string)
+
+
+def getLogFile(logger_obj)->str:
+    print(logger)
+    print(logger_obj)
+    print(dir(logger_obj))
+    print(logger.root)
+    print(logger.root.hasHandlers())
+    logger.info(f"Logging Object: {logger}")
+    print(logger_obj.handlers)
+    logger_file = [h.baseFilename for h in logger_obj.handlers if isinstance(h, logging.FileHandler)]
+    logger.info(f"Logger File List: {logger_file}")
+    if logger_file:
+        return logger_file[0]
+    else:
+        logger.error(f"No Log File Found...")
+        return None
+    
+
+def zip_fgdb(input_fgdb, output_zip_dir):
+    """
+    Zips an ArcGIS file geodatabase folder.
+    
+    :param input_folder: Path to the file geodatabase folder.
+    :param output_zip: Path to the output zip file.
+    """
+    output_zip = os.path.join(output_zip_dir, f"{os.path.basename(input_fgdb)}.zip")
+    with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(input_fgdb):
+            for file in files:
+                if not file.endswith(".lock"):
+                    file_path = os.path.join(root, file)
+                    # Add file to zip, preserving folder structure
+                    arcname = os.path.relpath(file_path, input_fgdb)
+                    zipf.write(file_path, arcname)
+
+    return output_zip
