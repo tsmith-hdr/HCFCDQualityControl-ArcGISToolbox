@@ -7,6 +7,7 @@ import json
 import sys
 import os
 import getpass
+import zipfile
 from pathlib import Path
 from datetime import datetime
 
@@ -110,3 +111,21 @@ def getLogFile(logger_obj)->str:
         logger.error(f"No Log File Found...")
         return None
     
+
+def zip_fgdb(input_fgdb, output_zip_dir):
+    """
+    Zips an ArcGIS file geodatabase folder.
+    
+    :param input_folder: Path to the file geodatabase folder.
+    :param output_zip: Path to the output zip file.
+    """
+    output_zip = os.path.join(output_zip_dir, f"{os.path.basename(input_fgdb)}.zip")
+    with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(input_fgdb):
+            for file in files:
+                file_path = os.path.join(root, file)
+                # Add file to zip, preserving folder structure
+                arcname = os.path.relpath(file_path, input_fgdb)
+                zipf.write(file_path, arcname)
+
+    return output_zip
