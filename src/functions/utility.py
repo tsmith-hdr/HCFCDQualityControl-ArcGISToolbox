@@ -123,9 +123,10 @@ def zip_fgdb(input_fgdb, output_zip_dir):
     with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(input_fgdb):
             for file in files:
-                file_path = os.path.join(root, file)
-                # Add file to zip, preserving folder structure
-                arcname = os.path.relpath(file_path, input_fgdb)
-                zipf.write(file_path, arcname)
+                if not file.endswith(".lock"):
+                    file_path = os.path.join(root, file)
+                    # Add file to zip, preserving folder structure
+                    arcname = os.path.relpath(file_path, input_fgdb)
+                    zipf.write(file_path, arcname)
 
     return output_zip

@@ -27,7 +27,6 @@ email_subject = f"Appendix Report {DATETIME_STR.split('-')[0]}"
 email_from = "Edward.smith@hdrinc.com"
 #email_to= ["Edward.smith@hdrinc.com"]
 email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
-#email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"] ## Testing 
 #######################################################################################################################
 ## Logging
 logger = logging.getLogger()

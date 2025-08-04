@@ -10,7 +10,7 @@ from arcgis.gis import GIS
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
-from src.functions import utility
+from src.functions import utility, email
 from src.tools.backupmanagement import TOOL_BackupServices
 from src.constants.paths import  PORTAL_URL, INTRANET_BACKUP_DIR, LOG_DIR
 from src.constants.values import PROJECT_SPATIAL_REFERENCE
@@ -23,9 +23,6 @@ backup_dir = INTRANET_BACKUP_DIR
 agol_folder_names = ["Measures", "Alternatives"]
 include_exclude_list = ["SAFER Mitigation Measures (HDR 2025)", "Alternative Extents", "Alternative"]#, "Data", "Exisitng Infrastructure", "Future Projects", "H&H", "Half Layers (2025-04-29)", "Hazardous, Toxic, Radioactive Waste (HTRW)", "Measures", "Real Estate"]  ## list of the category specific Geodatabase names that should be evaluated. If left blank all fgdbs will be evaluated
 include_exclude = "Include"
-email_from="edward.smith@hdrinc.com"
-#email_to=["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "aaron.butterer@hdrinc.com"]
-email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
 #######################################################################################################################
 ## Logging
 
@@ -46,6 +43,20 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 #######################################################################################################################
+## Email Parameters
+email_from="edward.smith@hdrinc.com"
+email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
+email_subject = f"Service Backup {DATETIME_STR.split('-')[0]}"
+email_text_type = "plain"
+email_message = """
+    Service Backup Complete
+    Check the attached log file for details.
+    Outputs Directory: {}
+    AGOL Folders: {}
+    Include Exclude: {}
+    Include Exclude List: {}
+    """.format(backup_dir, agol_folder_names, include_exclude, include_exclude_list)
+#######################################################################################################################
 logger.info(f"Run From Scheduler")
 logger.info(__file__)
 
@@ -62,16 +73,33 @@ if __name__ == "__main__":
 
     else:
         gis_connection = utility.authenticateAgolConnection(PORTAL_URL)
+        scheduled = False
 
     agol_folders = [gis_connection.content.folders.get(f.replace("'","")) for f in agol_folder_names]
 
-    TOOL_BackupServices.main(gis_conn=gis_connection,
-                              spatial_reference=PROJECT_SPATIAL_REFERENCE,
-                              agol_folder_objs=agol_folders,
-                              backup_dir=backup_dir,
-                              include_exclude_flag=include_exclude,
-                              scheduled=scheduled,
-                              include_exclude_list=include_exclude_list,
-                              email_from=email_from,
-                              email_to=email_to
-                              )
+    outputs_report, zipped_file = TOOL_BackupServices.main(gis_conn=gis_connection,
+                                                            spatial_reference=PROJECT_SPATIAL_REFERENCE,
+                                                            agol_folder_objs=agol_folders,
+                                                            backup_dir=backup_dir,
+                                                            include_exclude_flag=include_exclude,
+                                                            scheduled=scheduled,
+                                                            include_exclude_list=include_exclude_list
+                                                            )
+    
+
+    attachements_list = [outputs_report, zipped_file, LOG_FILE]
+
+    ## If the email from parameter is entered, there will be an attempt to send an email with the excel report and log file.
+    if email_from:
+        logger.info("Sending Email...")
+        result = email.sendEmail(sendTo=email_to, sendFrom=email_from, subject=email_subject, message_text=email_message+"Backup Directory: {}".format(backup_dir), text_type=email_text_type, attachments=attachements_list)
+        logger.info(result)
+    
+
+    ## Trys to open the excel report. Logs warning if unable to open.
+    logger.info(f"Opening Excel Report...")
+    try:
+        os.startfile(outputs_report)
+    except Exception as t:
+        logger.warning(f"Failed to Launch Excel")
+

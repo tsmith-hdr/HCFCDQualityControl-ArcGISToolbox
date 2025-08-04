@@ -16,10 +16,10 @@ from email.mime.text import MIMEText
 ################################################################################################################################################################
 def sendEmail(sendTo:list, sendFrom:str, subject:str, message_text:str, text_type:str, attachments:list)->str:
     returnMsgs = ''
-    # if type(sendTo) == list:
-    #     send_to = ", ".join(sendTo)
-    # else:
-    #     send_to = sendTo
+    if type(sendTo) == list:
+        send_to = ", ".join(sendTo)
+    else:
+        send_to = sendTo
     try:
         msg = MIMEMultipart()
         msg['Subject'] = subject
@@ -35,7 +35,7 @@ def sendEmail(sendTo:list, sendFrom:str, subject:str, message_text:str, text_typ
             msg.attach(file)
         smtp = smtplib.SMTP('smtp.hdrinc.com')
         print(sendTo)
-        smtp.sendmail(sendFrom, sendTo, msg.as_string())
+        smtp.sendmail(sendFrom, send_to, msg.as_string())
         smtp.close()
 
         returnMsgs = f'-- Message Sent To --\n{sendTo}'
