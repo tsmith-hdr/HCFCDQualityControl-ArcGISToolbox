@@ -17,7 +17,7 @@ from arcgis.gis import GIS, ItemTypeEnum
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from src.constants.paths import OUTPUTS_DIR
+from src.constants.paths import OUTPUTS_DIR, LOG_DIR
 from src.functions import utility
 from src.functions import email
 from src.classes.servicelayer import ServiceLayer
@@ -34,7 +34,7 @@ ZIP_DIR = os.path.join(OUTPUTS_DIR, "BackupServices", "zip")
 ########################################################################################################################################
 ## Logging
 logger = logging.getLogger(f"root.TOOL_BackupServices")
-log_file = utility.getLogFile(logger)
+log_file = None
 ########################################################################################################################################
 ## Email Parameters
 email_subject = f"Service Backup {DATETIME_STR.split('-')[0]}"
@@ -206,11 +206,20 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
     logger.info(f"Zipping Local GDB and Excel Reports...")
     arcpy.AddMessage(f"Zipping Local GDB and Excel Reports...")
     try:
+        zipped_fgdb = utility.zip_fgdb(local_gdb_path, ZIP_DIR)
         zipped = os.path.join(ZIP_DIR, f"BackupServices_{DATETIME_STR}.zip")
         with ZipFile(zipped, 'w') as zip:
-            zip.write(local_gdb_path, os.path.basename(local_gdb_path))
+            logger.debug(f"Writing FGDB...")
+            #zip.write(local_gdb_path, os.path.basename(local_gdb_path)) ## Produced empty folder
+            zip.write(zipped_fgdb)
+            logger.debug("Completed.")
+            logger.debug(f"Writing Report...")
             zip.write(OUTPUT_REPORT, os.path.basename(OUTPUT_REPORT))
-            zip.write(log_file, os.path.basename(log_file))
+            logger.debug(f"Completed.")
+            if log_file:
+                logger.debug("Writing Log...")
+                zip.write(log_file, os.path.basename(log_file))
+                logger.debug("Completed.")
 
             logger.info('All files zipped successfully!')
     except Exception as r:
