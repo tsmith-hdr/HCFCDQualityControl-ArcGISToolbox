@@ -67,11 +67,10 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
 #############################################################################################################################
     ## Creating the Local File GDB. If the Overwrite Outputs environment is set to False, this will fail
     logger.info(f"Creating Local File GDB...")
-    local_gdb_path = os.path.join(GDB_DIR, f"ServiceBackup_{DATETIME_STR.split('-')[0]}.gdb")
+    local_gdb_path = os.path.join(GDB_DIR, f"ServiceBackup_{DATETIME_STR.split('-')}.gdb")
     logger.info(f"Local GDB Path: {local_gdb_path}")
     arcpy.management.CreateFileGDB(out_folder_path=GDB_DIR, 
-                                    out_name=f"ServiceBackup_{DATETIME_STR.split('-')[0]}"
-                                    )
+                                    out_name=f"ServiceBackup_{DATETIME_STR.split('-')}")
     
     ## Change the default workspace to the New File GDB
     arcpy.env.workspace = local_gdb_path
