@@ -25,7 +25,7 @@ DATETIME_STR = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 logger = logging.getLogger(f"root.TOOL_AppendixReport")
 log_file = utility.getLogFile(logger)
 #############################################################################################################################
-def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel:str, include_records:str,include_exclude_list:list=None)->None:
+def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel:str, include_records:str,include_exclude_list:list=None, scheduled:bool=None)->None:
 
     #########################################################################################################################
     ## Empty lists used later in the process
@@ -51,50 +51,53 @@ def main(gis_conn:GIS, agol_folders:list, include_exclude_flag:str, output_excel
 
     arcpy.AddMessage(f"Item Count: {len(item_list)}")
     arcpy.AddMessage(f"Iterating Portal Item List...")
-    logger.info(f"Item Count: {len(item_list)}")
-    logger.info(f"Iterating Portal Item List...")
+
 
     ## Here we are starting to iterate over the AGOL Item Objects from the previously generated list. 
     # This object will be passed into the ServiceLayer class
     for item in item_list:
         arcpy.AddMessage(f"Item: {item}")
         logger.info(f"Item: {item}")
-        item_layers = item.layers ## Retrieve the Services sublayers
-        arcpy.AddMessage(f"Layer Count: {len(item_layers)}")
-        logger.info(f"Layer Count: {len(item_layers)}")
-        ## Iterate over the layers contained in the Service/Portal Item.
-        for layer in item_layers:
-            arcpy.AddMessage(f"Layer: {layer}")
-            logger.info(f"Layer: {layer}")
-            ## Creates an instance of the ServicLayer class
-            sl = ServiceLayer(gis_conn, layer, item)
-            logger.debug(f"Service Layer Object: {sl}")
+        try:
 
-            ## Here we are creating a dictionary of the properties used in the Overview sheet of the out report. 
-            # This dictionary will be added the property_list which is used in the Pandas DataFrame
-            property_dict = sl.propertyDictionary()
-            logger.debug(f"Property Dictionary: {property_dict}")
+            item_layers = item.layers ## Retrieve the Services sublayers
+            arcpy.AddMessage(f"Layer Count: {len(item_layers)}")
+            logger.info(f"Layer Count: {len(item_layers)}")
+            ## Iterate over the layers contained in the Service/Portal Item.
+            for layer in item_layers:
+                arcpy.AddMessage(f"Layer: {layer}")
+                logger.info(f"Layer: {layer}")
+                ## Creates an instance of the ServicLayer class
+                sl = ServiceLayer(gis_conn, layer, item)
+                logger.debug(f"Service Layer Object: {sl}")
 
-            ## If the report is going to include records for each of the layers, the below chunk handles the creation.
-            if include_records == "Include Records":
-                logger.info(f"Adding Hyperlink to Property Dictionary...")
-                ## I create a new dictionary to make sure that the Sheet Hyperlink is in the first column.
-                new_dict = {"Sheet Hyperlink":sl.excelHyperlink}
-                for k,v in property_dict.items(): ## Populating the new_dict
-                    new_dict[k]=v
+                ## Here we are creating a dictionary of the properties used in the Overview sheet of the out report. 
+                # This dictionary will be added the property_list which is used in the Pandas DataFrame
+                property_dict = sl.propertyDictionary()
+                logger.debug(f"Property Dictionary: {property_dict}")
 
-                property_dict = new_dict ## reassign the property_dict variable to the new_dict. I did this for when we append the property_dict toe the property_list.
-                
-                logger.info(f"Creating Record DataFrame...")
-                record_df = sl.recordDf() ## Method that creates a Pandas DataFrame of the layers attribute table.
+                ## If the report is going to include records for each of the layers, the below chunk handles the creation.
+                if include_records == "Include Records":
+                    logger.info(f"Adding Hyperlink to Property Dictionary...")
+                    ## I create a new dictionary to make sure that the Sheet Hyperlink is in the first column.
+                    new_dict = {"Sheet Hyperlink":sl.excelHyperlink}
+                    for k,v in property_dict.items(): ## Populating the new_dict
+                        new_dict[k]=v
 
-                logger.debug(record_df.head())
-                logger.info(f"Appending Record DF to RECORD_LIST...")
+                    property_dict = new_dict ## reassign the property_dict variable to the new_dict. I did this for when we append the property_dict toe the property_list.
+                    
+                    logger.info(f"Creating Record DataFrame...")
+                    record_df = sl.recordDf() ## Method that creates a Pandas DataFrame of the layers attribute table.
 
-                record_list.append({"sheet_name":sl.excelSheetName, "df":record_df}) 
+                    logger.debug(record_df.head())
+                    logger.info(f"Appending Record DF to RECORD_LIST...")
 
-            logger.info("Appending property_dict to PROPERTY_LIST...")
-            property_list.append(property_dict)
+                    record_list.append({"sheet_name":sl.excelSheetName, "df":record_df}) 
+
+                logger.info("Appending property_dict to PROPERTY_LIST...")
+                property_list.append(property_dict)
+        except Exception as e:
+            logger.error(e)
 
     logger.info(f"PROPERTY_LIST Count: {len(property_list)}")
     logger.info(f"RECORD_LIST Count: {len(record_list)}")

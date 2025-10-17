@@ -72,9 +72,10 @@ if __name__ == "__main__":
 
     else:
         gis_connection = utility.authenticateAgolConnection(PORTAL_URL)
+        scheduled = False
 
     agol_folders = [f for f in gis_connection.content.folders.list() if f.name not in folder_avoid_list]
-
+    logger.info(f"Folders: {agol_folders}")
     outputs_report, zipped_file = TOOL_BackupServices.main(gis_conn=gis_connection,
                                                             spatial_reference=PROJECT_SPATIAL_REFERENCE,
                                                             agol_folder_objs=agol_folders,

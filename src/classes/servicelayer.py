@@ -94,7 +94,7 @@ class ServiceLayer():
 
         return out_dict
     
-    def propertyDictionary(self)->dict:
+    def propertyDictionary(self, metadata_text_type:str="html")->dict:
         out_dict = {}
         out_dict["Layer Name"]=self.layerName
         out_dict["Feature Service Name"]=self.parentServiceName if self.parentServiceName else self._getServiceName()
@@ -108,14 +108,14 @@ class ServiceLayer():
         out_dict["Layer Data Edit Date"]=self.epochToString(self.layerDataEditDate)
         out_dict["Layer Properties Edit Date"]=self.epochToString(self.layerPropertiesEditDate)
         out_dict["Layer Field Names"]=", ".join([f["name"] for f in self.layerFields])
-        out_dict["Layer Description"] = self.layerDescription
-        out_dict["Layer Credits"] = self.layerCredits
+        out_dict["Layer Description"] = meta.formatMdItem(self.layerDescription, 'description', metadata_text_type)
+        out_dict["Layer Credits"] = meta.formatMdItem(self.layerCredits, 'accessConstraints', metadata_text_type)
         out_dict["Portal Item Title"]=self.portalTitle
-        out_dict["Portal Item Description"]=self.portalDescription
+        out_dict["Portal Item Description"]=meta.formatMdItem(self.portalDescription, 'description', metadata_text_type)
         out_dict["Portal Item Summary"]=self.portalSummary
-        out_dict["Portal Item Tags"]=', '.join(self.portalTags)
-        out_dict["Portal Item Credits"]=self.portalCredits
-        out_dict["Portal Item Terms of Use"]=self.portalTermsOfUse
+        out_dict["Portal Item Tags"]=meta.formatMdItem(self.portalTags, "tags", metadata_text_type)
+        out_dict["Portal Item Credits"]=meta.formatMdItem(self.portalCredits, 'accessconstraints', metadata_text_type)
+        out_dict["Portal Item Terms of Use"]=meta.formatMdItem(self.portalTermsOfUse, 'licenseinfo', metadata_text_type)
 
         
 

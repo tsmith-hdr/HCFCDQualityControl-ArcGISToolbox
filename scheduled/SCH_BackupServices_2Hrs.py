@@ -20,11 +20,12 @@ LOG_FILE = os.path.join(LOG_DIR, "Scheduled", "BackupServices", f"BackupServices
 #######################################################################################################################
 ## Input Parameters 
 backup_dir = INTRANET_BACKUP_DIR 
-agol_folder_names = ["Alternatives"]
-include_exclude_list = ["Alternative Extents", "Alternative"]#, "Data", "Exisitng Infrastructure", "Future Projects", "H&H", "Half Layers (2025-04-29)", "Hazardous, Toxic, Radioactive Waste (HTRW)", "Measures", "Real Estate"]  ## list of the category specific Geodatabase names that should be evaluated. If left blank all fgdbs will be evaluated
+agol_folder_names = ["Alternatives", "Root Folder", "Measures"]
+include_exclude_list = ["Tunnels ROW (HDR 2025)", "Channel ROW (HDR 2025)", "Intake Area (HDR 2025)"]#, "Data", "Exisitng Infrastructure", "Future Projects", "H&H", "Half Layers (2025-04-29)", "Hazardous, Toxic, Radioactive Waste (HTRW)", "Measures", "Real Estate"]  ## list of the category specific Geodatabase names that should be evaluated. If left blank all fgdbs will be evaluated
 include_exclude = "Include"
 #######################################################################################################################
 ## Logging
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -45,6 +46,7 @@ logger.addHandler(ch)
 #######################################################################################################################
 ## Email Parameters
 email_from="edward.smith@hdrinc.com"
+#email_to=["edward.smith@hdrinc.com"]
 email_to = ["shama.sheth@hdrinc.com","edward.smith@hdrinc.com", "robert.graham@hdrinc.com", "stewart.macpherson@hdrinc.com", "aaron.butterer@hdrinc.com"]
 email_subject = f"Service Backup {DATETIME_STR.split('-')[0]}"
 email_text_type = "plain"
@@ -87,12 +89,18 @@ if __name__ == "__main__":
                                                             )
     
 
-    attachements_list = [outputs_report,LOG_FILE]
+    #attachements_list = [outputs_report,LOG_FILE]
 
     ## If the email from parameter is entered, there will be an attempt to send an email with the excel report and log file.
     if email_from:
         logger.info("Sending Email...")
-        result = email.sendEmail(sendTo=email_to, sendFrom=email_from, subject=email_subject, message_text=email_message+"Backup Directory: {}".format(backup_dir), text_type=email_text_type, attachments=attachements_list)
+        result = email.sendEmail(sendTo=email_to, 
+                                 sendFrom=email_from, 
+                                 subject=email_subject, 
+                                 message_text=email_message+"Backup Directory: {}".format(backup_dir), 
+                                 text_type=email_text_type, 
+                                 attachments=None)
+        
         logger.info(result)
     
 

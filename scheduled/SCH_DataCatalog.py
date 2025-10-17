@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from importlib import reload
 from arcgis.gis import GIS
+import arcpy
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
@@ -74,7 +75,18 @@ if __name__ == "__main__":
     logger.info("~~"*100)
     logger.info("~~"*100)
 
+    group_object = gis_connection.groups.get(EXTERNAL_GROUP_ITEMID)
+    arcpy.AddMessage(f"Building Portal Item List...")
+    logger.info(f"Building Portal Item List...")
+
+    group_items = group_object.search("type:Feature Service")["results"]
+    logger.info(f"Feature Service Count: {len(group_items)}")
+
+    hosted_group_items = [i for i in group_items if 'Hosted Service' in i.typeKeywords]
+    logger.info(f"Hosted Feature Service Count: {len(hosted_group_items)}")
+
     TOOL_DataCatalog.main(gis_conn=gis_connection,
+                          items=hosted_group_items,
                           output_excel=output_excel)
 
 

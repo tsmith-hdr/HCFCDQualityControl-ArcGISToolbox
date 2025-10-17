@@ -67,10 +67,10 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
 #############################################################################################################################
     ## Creating the Local File GDB. If the Overwrite Outputs environment is set to False, this will fail
     logger.info(f"Creating Local File GDB...")
-    local_gdb_path = os.path.join(GDB_DIR, f"ServiceBackup_{DATETIME_STR.split('-')}.gdb")
+    local_gdb_path = os.path.join(GDB_DIR, f"ServiceBackup_{DATETIME_STR}.gdb")
     logger.info(f"Local GDB Path: {local_gdb_path}")
     arcpy.management.CreateFileGDB(out_folder_path=GDB_DIR, 
-                                    out_name=f"ServiceBackup_{DATETIME_STR.split('-')}")
+                                    out_name=f"ServiceBackup_{DATETIME_STR}")
     
     ## Change the default workspace to the New File GDB
     arcpy.env.workspace = local_gdb_path
@@ -100,35 +100,39 @@ def main(gis_conn:GIS,spatial_reference:arcpy.SpatialReference, agol_folder_objs
             arcpy.AddMessage(f"Exporting Services...")
             for item_obj in item_obj_list:
                 logger.info(f"AGOL Item: {item_obj}")
-                logger.info(f"Layer Count: {len(item_obj.layers)}")
-                for layer_obj in item_obj.layers:
-                    sl_obj = ServiceLayer(gis_conn, layer_obj, item_obj)
-                    logger.debug(sl_obj)
-                    logger.info(f"Layer: {sl_obj.layerName}")
-                    ## Exports the Service Layer to the Local GDB.
-                    # The export method will only export features that intersect with the extent of the study area. 
-                    # returns a dictionary of items to update the backedup feature class metadata.
-                    try:
-                        out_dict = sl_obj.exportLayer(out_workspace=os.path.join(local_gdb_path, dataset_name))
-                    except Exception as e:
-                        failed.append({"Layer":sl_obj.layerName, "Action":"Export Layer", "Error":e})
+                try:
+                    logger.info(f"Layer Count: {len(item_obj.layers)}")
+                    for layer_obj in item_obj.layers:
+                        sl_obj = ServiceLayer(gis_conn, layer_obj, item_obj)
+                        logger.debug(sl_obj)
+                        logger.info(f"Layer: {sl_obj.layerName}")
+                        ## Exports the Service Layer to the Local GDB.
+                        # The export method will only export features that intersect with the extent of the study area. 
+                        # returns a dictionary of items to update the backedup feature class metadata.
+                        try:
+                            out_dict = sl_obj.exportLayer(out_workspace=os.path.join(local_gdb_path, dataset_name))
+                        except Exception as e:
+                            logger.error(f"Failed::{e}")
+                            failed.append({"Layer":sl_obj.layerName, "Action":"Export Layer", "Error":e})
 
-                    out_dict["Folder Name"] = folder_obj.name
+                        out_dict["Folder Name"] = folder_obj.name
 
-                    df_list.append(out_dict)
-                    logger.debug(f"Layer Metadata Dictionary:\n{out_dict}")
-                    logger.info(f"Updating Layer Metadata...")
-                    try:
-                        meta = md.Metadata(out_dict["Feature Class Path"])
-                        meta.summary = f"Created as part of a backup on {DATETIME_STR.split('-')[0]} performed by {os.getlogin()}"
-                        meta.tags = f"Layer Name:{out_dict['Layer Name']}, Layer URL:{out_dict['Layer URL']}, Service Item Id:{out_dict['Service Item Id']}"
-                        meta.credits = out_dict["Service Credits"]
-                        meta.save()
-                        logger.info(f"Save Successfull...")
-                    except Exception as m:
-                        logger.error(f"Failed To Update Layer Metadata: {m}")
-                        failed.append({"Layer":sl_obj.layerName, "Action":"Update Feature Class Metadata", "Error":m})
-
+                        df_list.append(out_dict)
+                        logger.debug(f"Layer Metadata Dictionary:\n{out_dict}")
+                        logger.info(f"Updating Layer Metadata...")
+                        try:
+                            meta = md.Metadata(out_dict["Feature Class Path"])
+                            meta.summary = f"Created as part of a backup on {DATETIME_STR.split('-')[0]} performed by {os.getlogin()}"
+                            meta.tags = f"Layer Name:{out_dict['Layer Name']}, Layer URL:{out_dict['Layer URL']}, Service Item Id:{out_dict['Service Item Id']}"
+                            meta.credits = out_dict["Service Credits"]
+                            meta.save()
+                            logger.info(f"Save Successfull...")
+                        except Exception as m:
+                            logger.error(f"Failed To Update Layer Metadata: {m}")
+                            failed.append({"Layer":sl_obj.layerName, "Action":"Update Feature Class Metadata", "Error":m})
+                except Exception as p:
+                    logger.error(f"Failed to access Service Info\n{p}")
+                    failed.append({"Layer":item_obj.title, "Action":"Access Info", "Error":p})
 
     ## Here we are compressing the file gdb this is a lossl_objess function. We want to add this process to make sure that the archived records are unable to be editied.
     logger.info(f"Compressing Local GDB Items...")
